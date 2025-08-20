@@ -1,0 +1,13 @@
+{
+  "name": "one-brain-ai-plugin",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "esbuild src/code.ts --bundle --outfile=dist/code.js --format=iife --platform=browser --target=es2017 && esbuild src/ui.ts --bundle --outfile=dist/ui.js --format=iife --platform=browser --target=es2017",
+    "watch": "npm run build -- --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.117.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.4"
+  }
+}

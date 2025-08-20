@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "ES2019",
+        "module": "ESNext",
+        "moduleResolution": "Node",
+        "strict": true,
+        "lib": [
+            "ES2019",
+            "DOM"
+        ], // DOM for ui.ts, safe for all
+        "types": [
+            "@figma/plugin-typings"
+        ] // <-- key line
+    },
+    "include": [
+        "src/**/*"
+    ]
+}

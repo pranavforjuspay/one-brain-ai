@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>One Brain AI - Document This</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            background: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 100%;
+        }
+
+        /* Status/Loading UI */
+        #status-container {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        #status {
+            font-size: 14px;
+            margin-bottom: 16px;
+            color: #666;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: #0066cc;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* Form UI */
+        #form-container {
+            display: none;
+        }
+
+        .form-header {
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .form-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        #level-info {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group.large {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 4px;
+            font-size: 11px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+            line-height: 1.4;
+        }
+
+        .textarea-large {
+            min-height: 80px;
+        }
+
+        .help-text {
+            font-size: 10px;
+            color: #888;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+
+        /* Frame-specific fields */
+        #frame-state {
+            display: none;
+        }
+
+        label[for="frame-state"] {
+            display: none;
+        }
+
+        /* Checkbox */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 16px 0;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            font-weight: normal;
+            text-transform: none;
+            letter-spacing: normal;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #save-btn {
+            background: #0066cc;
+            color: white;
+        }
+
+        #save-btn:hover:not(:disabled) {
+            background: #0052a3;
+        }
+
+        #save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #cancel-btn {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        #cancel-btn:hover {
+            background: #e8e8e8;
+        }
+
+        /* Extraction Preview Styles */
+        #extraction-container {
+            display: none;
+        }
+
+        .extraction-preview {
+            margin-bottom: 20px;
+        }
+
+        .extraction-section {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .extraction-section h3 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .extraction-content {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .extraction-content div {
+            margin-bottom: 4px;
+        }
+
+        .extraction-content strong {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .extraction-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .extraction-list li {
+            padding: 4px 8px;
+            margin-bottom: 2px;
+            background: #fff;
+            border-radius: 3px;
+            border: 1px solid #dee2e6;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 11px;
+        }
+
+        .extraction-details {
+            margin-top: 8px;
+        }
+
+        .extraction-details summary {
+            cursor: pointer;
+            font-size: 11px;
+            color: #6c757d;
+            padding: 4px 0;
+        }
+
+        .extraction-details summary:hover {
+            color: #495057;
+        }
+
+        .extraction-raw {
+            background: #f1f3f4;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #495057;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 8px;
+        }
+
+        #extraction-level-info {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #send-ai-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        #send-ai-btn:hover:not(:disabled) {
+            background: #218838;
+        }
+
+        #send-ai-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #back-btn {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        #back-btn:hover {
+            background: #e8e8e8;
+        }
+
+        /* Prose Documentation Styles */
+        .prose-documentation {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #333;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .prose-documentation h1,
+        .prose-documentation h2,
+        .prose-documentation h3,
+        .prose-documentation h4 {
+            margin: 20px 0 12px 0;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .prose-documentation h1 {
+            font-size: 18px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+
+        .prose-documentation h2 {
+            font-size: 16px;
+            color: #34495e;
+        }
+
+        .prose-documentation h3 {
+            font-size: 14px;
+            color: #34495e;
+        }
+
+        .prose-documentation h4 {
+            font-size: 13px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .prose-documentation p {
+            margin: 12px 0;
+            line-height: 1.6;
+        }
+
+        .prose-documentation ul,
+        .prose-documentation ol {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+
+        .prose-documentation li {
+            margin: 6px 0;
+            line-height: 1.5;
+        }
+
+        .prose-documentation blockquote {
+            margin: 16px 0;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-left: 4px solid #0066cc;
+            font-style: italic;
+            color: #555;
+        }
+
+        .prose-documentation code {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 11px;
+            color: #e83e8c;
+        }
+
+        .prose-documentation pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 16px 0;
+            overflow-x: auto;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .prose-documentation strong {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .prose-documentation em {
+            font-style: italic;
+            color: #555;
+        }
+
+        .prose-documentation hr {
+            margin: 24px 0;
+            border: none;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        /* Edit mode styles */
+        .prose-edit-mode {
+            display: none;
+        }
+
+        .prose-edit-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            resize: vertical;
+            background: #fafafa;
+        }
+
+        .prose-edit-textarea:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+            background: #fff;
+        }
+
+        /* Prose button styles */
+        #edit-prose-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        #edit-prose-btn:hover:not(:disabled) {
+            background: #5a6268;
+        }
+
+        #save-prose-btn {
+            background: #0066cc;
+            color: white;
+        }
+
+        #save-prose-btn:hover:not(:disabled) {
+            background: #0052a3;
+        }
+
+        #cancel-edit-btn {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        #cancel-edit-btn:hover {
+            background: #e8e8e8;
+        }
+
+        /* Selection UI Styles */
+        #selection-container {
+            text-align: center;
+            padding: 20px 16px;
+        }
+
+        .selection-status {
+            padding: 40px 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .selection-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        #selection-message {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        #selection-detail {
+            font-size: 12px;
+            color: #6c757d;
+            line-height: 1.4;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+
+        #selection-info {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #document-btn {
+            background: #0066cc;
+            color: white;
+        }
+
+        #document-btn:hover:not(:disabled) {
+            background: #0052a3;
+        }
+
+        #document-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #close-btn {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        #close-btn:hover {
+            background: #e8e8e8;
+        }
+
+        /* Selection status variations */
+        .selection-status.has-selection {
+            background: #e8f5e8;
+            border-color: #28a745;
+        }
+
+        .selection-status.has-selection .selection-icon {
+            opacity: 1;
+        }
+
+        .selection-status.has-selection #selection-message {
+            color: #155724;
+        }
+
+        .selection-status.has-selection #selection-detail {
+            color: #155724;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 400px) {
+            .container {
+                padding: 12px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .extraction-section {
+                padding: 12px;
+            }
+
+            .prose-documentation {
+                padding: 16px;
+                font-size: 12px;
+            }
+
+            .prose-edit-textarea {
+                min-height: 250px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Initial Selection UI -->
+        <div id="selection-container">
+            <div class="form-header">
+                <h2>Document This Design</h2>
+                <div id="selection-info">Select a frame or section to document</div>
+            </div>
+
+            <div id="selection-status" class="selection-status">
+                <div class="selection-icon">📋</div>
+                <div id="selection-message">No selection</div>
+                <div id="selection-detail">Please select a frame or section in Figma to generate documentation.</div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" id="document-btn" disabled>Document Selection</button>
+                <button type="button" id="close-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Status/Loading UI -->
+        <div id="status-container" style="display: none;">
+            <div id="status">Initializing...</div>
+            <div class="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+        </div>
+
+        <!-- Extraction Preview UI -->
+        <div id="extraction-container" style="display: none;">
+            <div class="form-header">
+                <h2>Extracted Data Preview</h2>
+                <div id="extraction-level-info">Documentation Level: FRAME</div>
+            </div>
+
+            <div class="extraction-preview">
+                <div class="extraction-section">
+                    <h3>Text Samples</h3>
+                    <div id="extraction-text" class="extraction-content">No text found</div>
+                </div>
+
+                <div class="extraction-section">
+                    <h3>Components</h3>
+                    <div id="extraction-components" class="extraction-content">No components found</div>
+                </div>
+
+                <div class="extraction-section">
+                    <h3>Frame Information</h3>
+                    <div id="extraction-info" class="extraction-content">
+                        <div><strong>Scope:</strong> <span id="extraction-scope">-</span></div>
+                        <div><strong>Frame Name:</strong> <span id="extraction-frame-name">-</span></div>
+                        <div><strong>Platform Hints:</strong> <span id="extraction-platforms">-</span></div>
+                    </div>
+                </div>
+
+                <div class="extraction-section">
+                    <h3>Raw Extraction Data</h3>
+                    <details class="extraction-details">
+                        <summary>View JSON (for debugging)</summary>
+                        <pre id="extraction-raw" class="extraction-raw"></pre>
+                    </details>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" id="back-btn">Back</button>
+                <button type="button" id="send-ai-btn">Send to AI</button>
+            </div>
+        </div>
+
+        <!-- Prose Documentation UI -->
+        <div id="prose-container" style="display: none;">
+            <div class="form-header">
+                <h2>Generated Documentation</h2>
+                <div id="prose-level-info">Documentation Level: FRAME</div>
+            </div>
+
+            <!-- View Mode -->
+            <div id="prose-view-mode">
+                <div id="prose-content" class="prose-documentation">
+                    <!-- Prose content will be inserted here -->
+                </div>
+
+                <div class="button-group">
+                    <button type="button" id="edit-prose-btn">Edit</button>
+                    <button type="button" id="save-prose-btn">Save Documentation</button>
+                </div>
+            </div>
+
+            <!-- Edit Mode -->
+            <div id="prose-edit-mode" class="prose-edit-mode">
+                <textarea id="prose-edit-textarea" class="prose-edit-textarea"
+                    placeholder="Edit your documentation here..."></textarea>
+
+                <div class="button-group">
+                    <button type="button" id="cancel-edit-btn">Cancel</button>
+                    <button type="button" id="save-edit-btn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form UI -->
+        <div id="form-container">
+            <div class="form-header">
+                <h2>Document This Design</h2>
+                <div id="level-info">Documentation Level: FRAME</div>
+            </div>
+
+            <form id="capsule-form">
+                <div class="form-group">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" placeholder="Brief, descriptive title" required>
+                    <div class="help-text">Short, human-readable name for this design</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="product">Product</label>
+                    <input type="text" id="product" placeholder="Product name or area">
+                    <div class="help-text">Which product or feature area this belongs to</div>
+                </div>
+
+                <div class="form-group large">
+                    <label for="problem">Problem *</label>
+                    <textarea id="problem" class="textarea-large" placeholder="What user problem does this solve?"
+                        required></textarea>
+                    <div class="help-text">Describe the user problem this design addresses</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="outcome">Outcome</label>
+                    <textarea id="outcome" placeholder="Expected result or success metric"></textarea>
+                    <div class="help-text">What success looks like for this solution</div>
+                </div>
+
+                <div class="form-group large">
+                    <label for="approach">Approach *</label>
+                    <textarea id="approach" class="textarea-large"
+                        placeholder="• First key point&#10;• Second key point&#10;• Third key point"
+                        required></textarea>
+                    <div class="help-text">3-6 bullet points describing the design approach</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="components">Components</label>
+                    <textarea id="components"
+                        placeholder="Button/Primary&#10;Card/Default&#10;Input/Text (Large)"></textarea>
+                    <div class="help-text">Design system components used (one per line, with variants in parentheses)
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="links">Links</label>
+                    <textarea id="links"
+                        placeholder="Prototype: https://figma.com/proto/...&#10;Spec: https://docs.google.com/..."></textarea>
+                    <div class="help-text">Related links (format: Label: URL, one per line)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="platforms">Platforms</label>
+                    <input type="text" id="platforms" placeholder="iOS, Android, Web">
+                    <div class="help-text">Target platforms (comma-separated)</div>
+                </div>
+
+                <!-- Frame-specific field -->
+                <div class="form-group">
+                    <label for="frame-state">UI State</label>
+                    <select id="frame-state">
+                        <option value="unknown">Unknown</option>
+                        <option value="success">Success</option>
+                        <option value="error">Error</option>
+                        <option value="empty">Empty</option>
+                        <option value="loading">Loading</option>
+                    </select>
+                    <div class="help-text">What state does this frame represent?</div>
+                </div>
+
+                <div class="form-group large">
+                    <label for="human-notes">Additional Notes</label>
+                    <textarea id="human-notes"
+                        placeholder="Any additional context, decisions, or considerations..."></textarea>
+                    <div class="help-text">Manual notes that won't be processed by AI</div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="add-badge" checked>
+                    <label for="add-badge">Add documentation badge to frame</label>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" id="cancel-btn">Cancel</button>
+                    <button type="button" id="save-btn">Save Documentation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        console.log("[one-brain-ai] HTML INLINE SCRIPT EXECUTING - Testing basic functionality");
+        console.log("[one-brain-ai] Document ready state:", document.readyState);
+
+        // Inline the critical UI functionality directly
+        console.log("[one-brain-ai] UI SCRIPT LOADING - Inline version executing");
+
+        let statusDiv;
+        let progressBar;
+        let formContainer;
+        let extractionContainer;
+        let form;
+        let saveButton;
+        let cancelButton;
+        let addBadgeCheckbox;
+        let sendAiButton;
+        let backButton;
+        let currentExtraction = null;
+        let currentProseContent = "";
+        let proseContainer;
+        let proseViewMode;
+        let proseEditMode;
+        let proseContent;
+        let proseEditTextarea;
+        let editProseBtn;
+        let saveProseBtn;
+        let cancelEditBtn;
+        let saveEditBtn;
+
+        function logUI(step, data) {
+            const timestamp = new Date().toISOString();
+            console.log(`[${timestamp}] [one-brain-ai] UI ${step}:`, data);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            logUI("DOM_CONTENT_LOADED", { readyState: document.readyState });
+            try {
+                initializeUI();
+                logUI("UI_INITIALIZED", { success: true });
+                logUI("SENDING_UI_READY", { timestamp: new Date().toISOString() });
+                parent.postMessage({ pluginMessage: { type: "ui-ready" } }, "*");
+                logUI("UI_READY_SENT", { success: true });
+            } catch (error) {
+                logUI("UI_INITIALIZATION_ERROR", {
+                    error: error instanceof Error ? error.message : String(error),
+                    stack: error instanceof Error ? error.stack : undefined
+                });
+            }
+        });
+
+        function initializeUI() {
+            statusDiv = document.getElementById("status");
+            progressBar = document.getElementById("progress-bar");
+            formContainer = document.getElementById("form-container");
+            extractionContainer = document.getElementById("extraction-container");
+            form = document.getElementById("capsule-form");
+            saveButton = document.getElementById("save-btn");
+            cancelButton = document.getElementById("cancel-btn");
+            addBadgeCheckbox = document.getElementById("add-badge");
+            sendAiButton = document.getElementById("send-ai-btn");
+            backButton = document.getElementById("back-btn");
+
+            // Initialize prose UI elements
+            proseContainer = document.getElementById("prose-container");
+            proseViewMode = document.getElementById("prose-view-mode");
+            proseEditMode = document.getElementById("prose-edit-mode");
+            proseContent = document.getElementById("prose-content");
+            proseEditTextarea = document.getElementById("prose-edit-textarea");
+            editProseBtn = document.getElementById("edit-prose-btn");
+            saveProseBtn = document.getElementById("save-prose-btn");
+            cancelEditBtn = document.getElementById("cancel-edit-btn");
+            saveEditBtn = document.getElementById("save-edit-btn");
+
+            // Initialize selection UI elements
+            const documentBtn = document.getElementById("document-btn");
+            const closeBtn = document.getElementById("close-btn");
+
+            saveButton.addEventListener("click", handleSave);
+            cancelButton.addEventListener("click", handleCancel);
+            sendAiButton.addEventListener("click", handleSendToAI);
+            backButton.addEventListener("click", handleBackToExtraction);
+
+            // Add prose event listeners
+            editProseBtn.addEventListener("click", handleEditProse);
+            saveProseBtn.addEventListener("click", handleSaveProse);
+            cancelEditBtn.addEventListener("click", handleCancelEdit);
+            saveEditBtn.addEventListener("click", handleSaveEdit);
+
+            // Add selection UI event listeners
+            documentBtn.addEventListener("click", handleDocumentSelection);
+            closeBtn.addEventListener("click", handleClose);
+
+            const textareas = form.querySelectorAll("textarea");
+            textareas.forEach((textarea) => {
+                textarea.addEventListener("input", autoResize);
+            });
+
+            // Auto-resize prose edit textarea
+            proseEditTextarea.addEventListener("input", autoResize);
+
+            // Show selection container by default instead of status
+            showSelectionContainer();
+        }
+
+        function autoResize(event) {
+            const textarea = event.target;
+            textarea.style.height = "auto";
+            textarea.style.height = textarea.scrollHeight + "px";
+        }
+
+        function showStatus(message, step, total) {
+            statusDiv.textContent = message;
+            const percentage = step / total * 100;
+            progressBar.style.width = `${percentage}%`;
+            document.getElementById("selection-container").style.display = "none";
+            document.getElementById("status-container").style.display = "block";
+            formContainer.style.display = "none";
+            extractionContainer.style.display = "none";
+            proseContainer.style.display = "none";
+        }
+
+        function showSelectionContainer() {
+            document.getElementById("selection-container").style.display = "block";
+            document.getElementById("status-container").style.display = "none";
+            formContainer.style.display = "none";
+            extractionContainer.style.display = "none";
+            proseContainer.style.display = "none";
+        }
+
+        function showForm() {
+            document.getElementById("selection-container").style.display = "none";
+            document.getElementById("status-container").style.display = "none";
+            formContainer.style.display = "block";
+            extractionContainer.style.display = "none";
+            proseContainer.style.display = "none";
+        }
+
+        function showDetailedStatus(message, detail, step, total) {
+            statusDiv.textContent = message;
+
+            let detailDiv = document.getElementById("status-detail");
+            if (!detailDiv) {
+                detailDiv = document.createElement("div");
+                detailDiv.id = "status-detail";
+                detailDiv.style.fontSize = "10px";
+                detailDiv.style.color = "#888";
+                detailDiv.style.marginTop = "4px";
+                detailDiv.style.lineHeight = "1.3";
+                statusDiv.parentNode.insertBefore(detailDiv, statusDiv.nextSibling);
+            }
+            detailDiv.textContent = detail;
+
+            const percentage = step / total * 100;
+            progressBar.style.width = `${percentage}%`;
+            document.getElementById("status-container").style.display = "block";
+            formContainer.style.display = "none";
+        }
+
+        function showError(message) {
+            statusDiv.textContent = message;
+            statusDiv.style.color = "#ff4444";
+            progressBar.style.backgroundColor = "#ff4444";
+            progressBar.style.width = "100%";
+        }
+
+        function showSuccess(message) {
+            statusDiv.textContent = message;
+            statusDiv.style.color = "#44aa44";
+            progressBar.style.backgroundColor = "#44aa44";
+            progressBar.style.width = "100%";
+            formContainer.style.display = "none";
+            document.getElementById("status-container").style.display = "block";
+        }
+
+        function prefillForm(capsule) {
+            logUI("PREFILL_FORM_START", { capsuleTitle: capsule.title, capsuleLevel: capsule.level });
+
+            // Basic fields
+            document.getElementById("title").value = capsule.title || "";
+            document.getElementById("product").value = capsule.product || "";
+            document.getElementById("problem").value = capsule.problem || "";
+            document.getElementById("outcome").value = capsule.outcome || "";
+            document.getElementById("human-notes").value = capsule.humanNotes || "";
+
+            // Approach (array to newline-separated text)
+            const approachText = capsule.approach.map(item => `• ${item}`).join("\n");
+            document.getElementById("approach").value = approachText;
+
+            // Components (array to newline-separated text)
+            const componentsText = capsule.components
+                .map(comp => comp.variant ? `${comp.ds} (${comp.variant})` : comp.ds)
+                .join("\n");
+            document.getElementById("components").value = componentsText;
+
+            // Links (array to newline-separated text)
+            const linksText = capsule.links
+                .map(link => `${link.label}: ${link.url}`)
+                .join("\n");
+            document.getElementById("links").value = linksText;
+
+            // Platforms (array to comma-separated text)
+            document.getElementById("platforms").value = capsule.platforms.join(", ");
+
+            // Level-specific fields
+            const levelInfo = document.getElementById("level-info");
+            levelInfo.textContent = `Documentation Level: ${capsule.level.toUpperCase()}`;
+
+            if (capsule.level === "frame") {
+                const stateSelect = document.getElementById("frame-state");
+                stateSelect.value = capsule.state || "unknown";
+                stateSelect.style.display = "block";
+                document.querySelector('label[for="frame-state"]').style.display = "block";
+            }
+
+            // Auto-resize all textareas after filling
+            const textareas = form.querySelectorAll("textarea");
+            textareas.forEach(textarea => {
+                textarea.style.height = "auto";
+                textarea.style.height = textarea.scrollHeight + "px";
+            });
+
+            logUI("PREFILL_FORM_COMPLETE", { fieldsPopulated: true });
+            showForm();
+        }
+
+        function extractFormData() {
+            const title = document.getElementById("title").value.trim();
+            const product = document.getElementById("product").value.trim() || undefined;
+            const problem = document.getElementById("problem").value.trim();
+            const outcome = document.getElementById("outcome").value.trim() || undefined;
+            const humanNotes = document.getElementById("human-notes").value.trim() || undefined;
+
+            const approachText = document.getElementById("approach").value.trim();
+            const approach = approachText
+                .split("\n")
+                .map(line => line.replace(/^[•\-\*]\s*/, "").trim())
+                .filter(line => line.length > 0);
+
+            const componentsText = document.getElementById("components").value.trim();
+            const components = componentsText
+                .split("\n")
+                .map(line => {
+                    const match = line.match(/^(.+?)\s*\((.+)\)$/);
+                    if (match) {
+                        return { ds: match[1].trim(), variant: match[2].trim() };
+                    }
+                    return { ds: line.trim() };
+                })
+                .filter(comp => comp.ds.length > 0);
+
+            const linksText = document.getElementById("links").value.trim();
+            const links = linksText
+                .split("\n")
+                .map(line => {
+                    const colonIndex = line.indexOf(":");
+                    if (colonIndex > 0) {
+                        return {
+                            label: line.substring(0, colonIndex).trim(),
+                            url: line.substring(colonIndex + 1).trim()
+                        };
+                    }
+                    return null;
+                })
+                .filter(link => link !== null);
+
+            const platformsText = document.getElementById("platforms").value.trim();
+            const platforms = platformsText
+                .split(",")
+                .map(p => p.trim())
+                .filter(p => p.length > 0);
+
+            const baseCapsule = {
+                title,
+                product,
+                problem,
+                outcome,
+                approach,
+                components,
+                links,
+                platforms,
+                humanNotes,
+                canonical: false,
+                lastUpdated: new Date().toISOString().slice(0, 10)
+            };
+
+            const level = window.currentCapsuleLevel || "frame";
+
+            if (level === "frame") {
+                const state = document.getElementById("frame-state").value;
+                return {
+                    level: "frame",
+                    state,
+                    belongsToFlowId: undefined,
+                    ...baseCapsule
+                };
+            }
+
+            return {
+                level: level,
+                ...baseCapsule
+            };
+        }
+
+        function handleSave() {
+            try {
+                logUI("SAVE_BUTTON_CLICKED", { timestamp: new Date().toISOString() });
+                const capsule = extractFormData();
+                const addBadge = addBadgeCheckbox.checked;
+
+                saveButton.disabled = true;
+                saveButton.textContent = "Saving...";
+
+                logUI("SENDING_SAVE_MESSAGE", { capsuleTitle: capsule.title, addBadge });
+                parent.postMessage({
+                    pluginMessage: {
+                        type: "save",
+                        capsule,
+                        addBadge
+                    }
+                }, "*");
+            } catch (error) {
+                logUI("SAVE_ERROR", { error: error.message });
+                alert("Please check your form data and try again.");
+                saveButton.disabled = false;
+                saveButton.textContent = "Save Documentation";
+            }
+        }
+
+        function handleCancel() {
+            logUI("CANCEL_BUTTON_CLICKED", {});
+            parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+        }
+
+        function showExtractionPreview(extraction) {
+            logUI("SHOW_EXTRACTION_PREVIEW", {
+                textSamples: extraction.textSamples?.length || 0,
+                components: extraction.componentInstances?.length || 0,
+                scope: extraction.scope
+            });
+
+            currentExtraction = extraction;
+
+            // Update level info
+            const levelInfo = document.getElementById("extraction-level-info");
+            levelInfo.textContent = `Documentation Level: ${extraction.scope?.toUpperCase() || 'FRAME'}`;
+
+            // Update text samples
+            const textDiv = document.getElementById("extraction-text");
+            if (extraction.textSamples && extraction.textSamples.length > 0) {
+                const textList = document.createElement("ul");
+                textList.className = "extraction-list";
+                extraction.textSamples.forEach(text => {
+                    const li = document.createElement("li");
+                    li.textContent = text;
+                    textList.appendChild(li);
+                });
+                textDiv.innerHTML = "";
+                textDiv.appendChild(textList);
+            } else {
+                textDiv.innerHTML = "<em>No text found</em>";
+            }
+
+            // Update components
+            const componentsDiv = document.getElementById("extraction-components");
+            if (extraction.componentInstances && extraction.componentInstances.length > 0) {
+                const componentsList = document.createElement("ul");
+                componentsList.className = "extraction-list";
+                extraction.componentInstances.forEach(comp => {
+                    const li = document.createElement("li");
+                    li.textContent = comp.variant ? `${comp.name} (${comp.variant})` : comp.name;
+                    componentsList.appendChild(li);
+                });
+                componentsDiv.innerHTML = "";
+                componentsDiv.appendChild(componentsList);
+            } else {
+                componentsDiv.innerHTML = "<em>No components found</em>";
+            }
+
+            // Update frame information
+            document.getElementById("extraction-scope").textContent = extraction.scope || "-";
+            document.getElementById("extraction-frame-name").textContent = extraction.nodeName || "-";
+            document.getElementById("extraction-platforms").textContent =
+                (extraction.platformHints && extraction.platformHints.length > 0)
+                    ? extraction.platformHints.join(", ")
+                    : "-";
+
+            // Update raw JSON
+            const rawDiv = document.getElementById("extraction-raw");
+            rawDiv.textContent = JSON.stringify(extraction, null, 2);
+
+            // Show extraction container
+            document.getElementById("status-container").style.display = "none";
+            formContainer.style.display = "none";
+            extractionContainer.style.display = "block";
+        }
+
+        function handleSendToAI() {
+            logUI("SEND_TO_AI_CLICKED", { hasExtraction: !!currentExtraction });
+
+            if (!currentExtraction) {
+                logUI("SEND_TO_AI_ERROR", { error: "No extraction data available" });
+                return;
+            }
+
+            sendAiButton.disabled = true;
+            sendAiButton.textContent = "Sending...";
+
+            parent.postMessage({
+                pluginMessage: {
+                    type: "send-to-ai",
+                    extraction: currentExtraction
+                }
+            }, "*");
+        }
+
+        function handleBackToExtraction() {
+            logUI("BACK_TO_EXTRACTION_CLICKED", {});
+
+            // Show extraction preview again
+            if (currentExtraction) {
+                showExtractionPreview(currentExtraction);
+            }
+        }
+
+        function showFormFromExtraction() {
+            document.getElementById("status-container").style.display = "none";
+            extractionContainer.style.display = "none";
+            formContainer.style.display = "block";
+        }
+
+        // Prose Documentation Functions
+        function showProseDocumentation(data) {
+            logUI("SHOW_PROSE_DOCUMENTATION", {
+                hasDocumentation: !!data.documentation,
+                format: data.format,
+                hasValidationWarning: data.hasValidationWarning
+            });
+
+            currentProseContent = data.documentation || "";
+
+            // Update level info
+            const levelInfo = document.getElementById("prose-level-info");
+            levelInfo.textContent = `Documentation Level: ${data.level?.toUpperCase() || 'FRAME'}`;
+
+            // Convert plain text to HTML with basic formatting
+            const formattedContent = formatProseContent(currentProseContent);
+            proseContent.innerHTML = formattedContent;
+
+            // Show prose container
+            document.getElementById("status-container").style.display = "none";
+            extractionContainer.style.display = "none";
+            formContainer.style.display = "none";
+            proseContainer.style.display = "block";
+
+            // Ensure we're in view mode
+            proseViewMode.style.display = "block";
+            proseEditMode.style.display = "none";
+
+            // Reset button states
+            saveProseBtn.disabled = false;
+            saveProseBtn.textContent = "Save Documentation";
+        }
+
+        function formatProseContent(content) {
+            if (!content) return "<p><em>No documentation generated</em></p>";
+
+            // Simple text-to-HTML conversion with basic formatting
+            let html = content
+                // Convert double newlines to paragraph breaks
+                .split('\n\n')
+                .map(paragraph => {
+                    if (!paragraph.trim()) return '';
+
+                    // Handle headings (lines that end with a colon and are short)
+                    if (paragraph.includes('\n') === false && paragraph.endsWith(':') && paragraph.length < 100) {
+                        return `<h3>${paragraph.replace(':', '')}</h3>`;
+                    }
+
+                    // Handle bullet points
+                    if (paragraph.includes('\n') && paragraph.includes('•')) {
+                        const lines = paragraph.split('\n');
+                        let listItems = [];
+                        let currentParagraph = '';
+
+                        for (const line of lines) {
+                            if (line.trim().startsWith('•')) {
+                                if (currentParagraph) {
+                                    listItems.push(`<p>${currentParagraph.trim()}</p>`);
+                                    currentParagraph = '';
+                                }
+                                listItems.push(`<li>${line.trim().substring(1).trim()}</li>`);
+                            } else {
+                                currentParagraph += line + ' ';
+                            }
+                        }
+
+                        if (currentParagraph) {
+                            listItems.push(`<p>${currentParagraph.trim()}</p>`);
+                        }
+
+                        // Group consecutive list items
+                        let result = '';
+                        let inList = false;
+                        for (const item of listItems) {
+                            if (item.startsWith('<li>')) {
+                                if (!inList) {
+                                    result += '<ul>';
+                                    inList = true;
+                                }
+                                result += item;
+                            } else {
+                                if (inList) {
+                                    result += '</ul>';
+                                    inList = false;
+                                }
+                                result += item;
+                            }
+                        }
+                        if (inList) result += '</ul>';
+
+                        return result;
+                    }
+
+                    // Regular paragraph
+                    return `<p>${paragraph.trim()}</p>`;
+                })
+                .filter(p => p)
+                .join('');
+
+            // Handle bold text (simple **text** format)
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // Handle italic text (simple *text* format)
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+            return html;
+        }
+
+        function handleEditProse() {
+            logUI("EDIT_PROSE_CLICKED", {});
+
+            // Switch to edit mode
+            proseViewMode.style.display = "none";
+            proseEditMode.style.display = "block";
+
+            // Populate textarea with current content
+            proseEditTextarea.value = currentProseContent;
+
+            // Auto-resize textarea
+            proseEditTextarea.style.height = "auto";
+            proseEditTextarea.style.height = proseEditTextarea.scrollHeight + "px";
+
+            // Focus on textarea
+            proseEditTextarea.focus();
+        }
+
+        function handleCancelEdit() {
+            logUI("CANCEL_EDIT_CLICKED", {});
+
+            // Switch back to view mode without saving changes
+            proseEditMode.style.display = "none";
+            proseViewMode.style.display = "block";
+        }
+
+        function handleSaveEdit() {
+            logUI("SAVE_EDIT_CLICKED", {});
+
+            // Update current content with edited text
+            currentProseContent = proseEditTextarea.value.trim();
+
+            // Update the display
+            const formattedContent = formatProseContent(currentProseContent);
+            proseContent.innerHTML = formattedContent;
+
+            // Switch back to view mode
+            proseEditMode.style.display = "none";
+            proseViewMode.style.display = "block";
+        }
+
+        function handleSaveProse() {
+            logUI("SAVE_PROSE_CLICKED", {});
+
+            saveProseBtn.disabled = true;
+            saveProseBtn.textContent = "Saving...";
+
+            // Send the prose documentation to be saved
+            parent.postMessage({
+                pluginMessage: {
+                    type: "save-prose",
+                    documentation: currentProseContent,
+                    addBadge: true // Default to adding badge for prose docs
+                }
+            }, "*");
+        }
+
+        // Selection UI Functions
+        function handleDocumentSelection() {
+            logUI("DOCUMENT_SELECTION_CLICKED", {});
+
+            // Send message to trigger documentation workflow
+            parent.postMessage({
+                pluginMessage: {
+                    type: "document-selection"
+                }
+            }, "*");
+        }
+
+        function handleClose() {
+            logUI("CLOSE_CLICKED", {});
+
+            // Send message to close the plugin
+            parent.postMessage({
+                pluginMessage: {
+                    type: "cancel"
+                }
+            }, "*");
+        }
+
+        function updateSelectionUI(selectionInfo) {
+            logUI("UPDATE_SELECTION_UI", {
+                hasSelection: !!selectionInfo,
+                selectionType: selectionInfo?.type,
+                selectionName: selectionInfo?.name
+            });
+
+            const selectionStatus = document.getElementById("selection-status");
+            const selectionMessage = document.getElementById("selection-message");
+            const selectionDetail = document.getElementById("selection-detail");
+            const documentBtn = document.getElementById("document-btn");
+
+            if (selectionInfo && selectionInfo.name) {
+                // Has valid selection
+                selectionStatus.classList.add("has-selection");
+                selectionMessage.textContent = `Selected: ${selectionInfo.name}`;
+                selectionDetail.textContent = `Ready to generate documentation for this ${selectionInfo.type || 'selection'}.`;
+                documentBtn.disabled = false;
+            } else {
+                // No selection or invalid selection
+                selectionStatus.classList.remove("has-selection");
+                selectionMessage.textContent = "No selection";
+                selectionDetail.textContent = "Please select a frame or section in Figma to generate documentation.";
+                documentBtn.disabled = true;
+            }
+        }
+
+        window.onmessage = (event) => {
+            logUI("MESSAGE_RECEIVED", {
+                hasPluginMessage: !!event.data.pluginMessage,
+                type: event.data.pluginMessage?.type,
+                origin: event.origin
+            });
+
+            const msg = event.data.pluginMessage;
+            if (!msg) {
+                logUI("NO_PLUGIN_MESSAGE", { eventData: event.data });
+                return;
+            }
+
+            logUI("PROCESSING_MESSAGE", { type: msg.type });
+
+            switch (msg.type) {
+                case "status":
+                    logUI("STATUS_MESSAGE", { message: msg.message, step: msg.step, total: msg.total });
+                    showStatus(msg.message, msg.step, msg.total);
+                    break;
+                case "detailed-status":
+                    logUI("DETAILED_STATUS_MESSAGE", { message: msg.message, detail: msg.detail });
+                    showDetailedStatus(msg.message, msg.detail, msg.step, msg.total);
+                    break;
+                case "extraction-preview":
+                    const extraction = msg.data.extraction;
+                    logUI("EXTRACTION_PREVIEW_MESSAGE", {
+                        textSamples: extraction.textSamples?.length || 0,
+                        components: extraction.componentInstances?.length || 0,
+                        scope: extraction.scope
+                    });
+                    showExtractionPreview(extraction);
+                    break;
+                case "prefill":
+                    const capsule = msg.data.capsule;
+                    logUI("PREFILL_MESSAGE", {
+                        capsuleTitle: capsule.title,
+                        capsuleLevel: capsule.level,
+                        hasData: !!msg.data
+                    });
+                    window.currentCapsuleLevel = capsule.level;
+                    prefillForm(capsule);
+                    // Reset send button state
+                    sendAiButton.disabled = false;
+                    sendAiButton.textContent = "Send to AI";
+                    break;
+                case "error":
+                    logUI("ERROR_MESSAGE", { message: msg.message });
+                    showError(msg.message);
+                    // Reset send button state on error
+                    sendAiButton.disabled = false;
+                    sendAiButton.textContent = "Send to AI";
+                    break;
+                case "prose-documentation":
+                    const proseData = msg.data;
+                    logUI("PROSE_DOCUMENTATION_MESSAGE", {
+                        hasDocumentation: !!proseData.documentation,
+                        format: proseData.format,
+                        hasValidationWarning: proseData.hasValidationWarning
+                    });
+                    showProseDocumentation(proseData);
+                    // Reset send button state
+                    sendAiButton.disabled = false;
+                    sendAiButton.textContent = "Send to AI";
+                    break;
+                case "selection-changed":
+                    const selectionInfo = msg.data;
+                    logUI("SELECTION_CHANGED_MESSAGE", {
+                        hasSelection: !!selectionInfo,
+                        selectionType: selectionInfo?.type,
+                        selectionName: selectionInfo?.name
+                    });
+                    updateSelectionUI(selectionInfo);
+                    break;
+                case "success":
+                    logUI("SUCCESS_MESSAGE", { message: msg.message });
+                    showSuccess(msg.message);
+                    // Reset prose button state on success
+                    if (saveProseBtn) {
+                        saveProseBtn.disabled = false;
+                        saveProseBtn.textContent = "Save Documentation";
+                    }
+                    break;
+                default:
+                    logUI("UNKNOWN_MESSAGE_TYPE", { type: msg.type });
+                    break;
+            }
+        };
+
+        console.log("[one-brain-ai] Inline UI script setup complete");
+    </script>
+</body>
+
+</html>

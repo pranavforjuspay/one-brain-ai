@@ -1,0 +1,23 @@
+{
+    "name": "one-brain-ai — Document This",
+    "id": "com.onebrainai.docs-plugin",
+    "api": "1.0.0",
+    "main": "dist/code.js",
+    "ui": "ui.html",
+    "editorType": [
+        "figma",
+        "figjam"
+    ],
+    "permissions": [
+        "currentuser"
+    ],
+    "networkAccess": {
+        "reasoning": "Access local backend during development to save/read docs.",
+        "allowedDomains": [
+            "none"
+        ],
+        "devAllowedDomains": [
+            "http://localhost:8787/"
+        ]
+    }
+}

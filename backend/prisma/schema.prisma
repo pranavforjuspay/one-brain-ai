@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Doc {
+  id           String   @id @default(cuid())
+  level        String
+  title        String
+  product      String?
+  problem      String
+  outcome      String?
+  approach     String[] // bullets
+  components   Json     // [{ds, variant}]
+  links        Json     // [{label, url}]
+  humanNotes   String?
+  canonical    Boolean  @default(false)
+  platforms    String[]
+  lastUpdated  DateTime @default(now())
+
+  fileKey      String
+  nodeId       String?
+  pageName     String?
+
+  belongsToId  String?  // frame->flow, flow->page, page->file
+
+  state        String?  // frame only
+  keyStates    String[] // section only
+
+  problemTags  String[]
+  patternTags  String[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

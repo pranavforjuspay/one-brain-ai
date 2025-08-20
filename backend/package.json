@@ -1,0 +1,21 @@
+{
+  "name": "one-brain-ai-backend",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "prisma:gen": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@google-cloud/vertexai": "^1.10.0",
+    "@prisma/client": "^5.18.0",
+    "fastify": "^4.28.1",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.18.0",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.4"
+  }
+}
