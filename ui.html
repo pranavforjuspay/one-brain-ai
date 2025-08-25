@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apprentice V1</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #f9fafb;
+      background: #111827;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #111827;
+      margin: 0;
+      border-radius: 0;
+      box-shadow: none;
+      overflow: hidden;
+    }
+    header {
+      padding: 16px 20px;
+      background: #1f2937;
+      border-bottom: 1px solid #374151;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    header h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 700;
+      color: #f9fafb;
+    }
+    .actions {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+    }
+    .spacing-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .spacing-label {
+      font-size: 11px;
+      color: #9ca3af;
+      font-weight: 500;
+      margin: 0;
+    }
+    .spacing-input {
+      appearance: none;
+      border: 1px solid #4b5563;
+      background: #374151;
+      color: #f9fafb;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      width: 200px;
+      transition: all 0.2s ease;
+    }
+    .spacing-input:focus {
+      outline: none;
+      border-color: #6b7280;
+      background: #4b5563;
+    }
+    .spacing-input::placeholder {
+      color: #6b7280;
+      font-size: 11px;
+    }
+    button {
+      appearance: none;
+      border: 1px solid #4b5563;
+      background: #374151;
+      color: #f9fafb;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button.primary {
+      background: #1f2937;
+      color: #fff;
+      border: none;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    button.primary:hover {
+      background: #374151;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    main {
+      flex: 1;
+      overflow: auto;
+      padding: 12px 16px 24px;
+      background: #111827;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 20px;
+      margin-top: 24px;
+      margin-bottom: 20px;
+    }
+    .stat {
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 16px;
+      background: #1f2937;
+      color: #f9fafb;
+    }
+    .stat .label { font-size: 11px; color: #9ca3af; font-weight: 500; }
+    .stat .value { font-size: 16px; font-weight: 700; margin-top: 2px; color: #f9fafb; }
+    .filters-label { font-size: 11px; color: #9ca3af; margin: 6px 2px; font-weight: 500; }
+    .page-selector {
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #1f2937;
+    }
+    .page-selector-label {
+      font-size: 12px;
+      color: #f9fafb;
+      font-weight: 600;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .page-radios {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .page-radio {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .page-radio:hover {
+      background: #374151;
+    }
+    .page-radio input[type="radio"] {
+      margin: 0;
+      accent-color: #1f2937;
+    }
+    .page-radio-label {
+      font-size: 12px;
+      color: #f9fafb;
+      cursor: pointer;
+      flex: 1;
+    }
+    .page-radio-count {
+      font-size: 11px;
+      color: #1f2937;
+      background: #f3f4f6;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      border: 1px solid #d1d5db;
+    }
+    .tabs-container {
+      border-bottom: 1px solid #374151;
+      background: #1f2937;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      margin-bottom: 16px;
+    }
+    .tabs-scroll {
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #ccc transparent;
+    }
+    .tabs-scroll::-webkit-scrollbar {
+      height: 4px;
+    }
+    .tabs-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .tabs-scroll::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 2px;
+    }
+    .tabs {
+      display: flex;
+      gap: 0;
+      min-width: max-content;
+      padding: 0 16px;
+    }
+    .tab {
+      appearance: none;
+      border: none;
+      background: transparent;
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #9ca3af;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .tab:hover {
+      color: #f9fafb;
+      background: #374151;
+    }
+    .tab.active {
+      color: #f9fafb;
+      border-bottom-color: #f9fafb;
+      background: #374151;
+      font-weight: 600;
+    }
+    .filters {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      padding: 12px;
+      border-radius: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      margin-bottom: 12px;
+    }
+    .filter-btn {
+      border: 1px solid #4b5563;
+      background: #374151;
+      padding: 8px 14px;
+      font-size: 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      color: #d1d5db;
+    }
+    .filter-btn:hover {
+      background: #4b5563;
+      border-color: #6b7280;
+    }
+    .filter-btn.active {
+      background: #1f2937;
+      color: #fff;
+      font-weight: 600;
+      border-color: #1f2937;
+    }
+    .section { margin-top: 14px; }
+    .section h2 { font-size: 12px; margin: 0 0 8px; color: #f9fafb; }
+    .issue {
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      background: #1f2937;
+      transition: all 0.2s ease;
+    }
+    .issue:hover {
+      border-color: #4b5563;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    .issue .meta { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+    .row-actions { display: flex; gap: 8px; }
+    .row-actions button {
+      background: #1f2937;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .row-actions button:hover {
+      background: #374151;
+    }
+    .empty { font-size: 12px; color: #9ca3af; padding: 12px; border: 1px dashed #4b5563; border-radius: 8px; background: #1f2937; }
+    .accordion {
+      border: 1px solid #374151;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      background: #1f2937;
+      overflow: hidden;
+    }
+    .accordion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: #1f2937;
+      border-bottom: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .accordion-header:hover {
+      background: #374151;
+    }
+    .accordion-header.collapsed {
+      border-bottom: none;
+    }
+    .accordion-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .accordion-count {
+      font-size: 11px;
+      color: #1f2937;
+      background: rgba(255,255,255,0.9);
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-weight: 700;
+    }
+    .accordion-icon {
+      font-size: 14px;
+      color: rgba(255,255,255,0.9);
+      transition: transform 0.2s ease;
+    }
+    .accordion-header.collapsed .accordion-icon {
+      transform: rotate(0deg);
+    }
+    .accordion-header:not(.collapsed) .accordion-icon {
+      transform: rotate(180deg);
+    }
+    .accordion-content {
+      padding: 0;
+      max-height: 1000px;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      background: #1f2937;
+    }
+    .accordion-content.collapsed {
+      max-height: 0;
+    }
+    .accordion-issues {
+      padding: 8px;
+      background: #1f2937;
+    }
+    .issue-type-spacing .accordion-title::before {
+      content: '📏';
+      font-size: 14px;
+    }
+    .issue-type-text-style .accordion-title::before {
+      content: '🔤';
+      font-size: 14px;
+    }
+    .issue-type-autolayout .accordion-title::before {
+      content: '📐';
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Apprentice V1</h1>
+      <div class="actions">
+        <div class="spacing-input-group">
+          <label for="spacingValue" class="spacing-label">Spacing value</label>
+          <input type="number" id="spacingValue" class="spacing-input" placeholder="Enter the standard spacing value in px for this file" value="4" min="1" max="100">
+        </div>
+        <button id="scanBtn" class="primary">Run Design Audit</button>
+      </div>
+    </header>
+    <main>
+      <div id="info" class="stat" style="display:none"></div>
+      <div class="summary" id="summary" style="display:none">
+        <div class="stat"><div class="label">Total Issues</div><div class="value" id="totalIssues">0</div></div>
+        <div class="stat"><div class="label">Spacing</div><div class="value" id="spacingCount">0</div></div>
+        <div class="stat"><div class="label">Text Styles</div><div class="value" id="textCount">0</div></div>
+        <div class="stat"><div class="label">Autolayout</div><div class="value" id="autoCount">0</div></div>
+      </div>
+      
+      <div id="pageSelector" class="page-selector" style="display:none">
+        <div class="page-selector-label">Pages</div>
+        <div id="pageRadios" class="page-radios"></div>
+      </div>
+      
+      <div id="tabsContainer" class="tabs-container" style="display:none">
+        <div class="tabs-scroll">
+          <div class="tabs" id="tabs"></div>
+        </div>
+      </div>
+      
+      <div id="filtersLabel" class="filters-label" style="display:none">Filters</div>
+      <div id="filters" class="filters" style="display:none"></div>
+      <div class="section">
+        <h2>Issues</h2>
+        <div id="issues"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const scanBtn = document.getElementById('scanBtn');
+    const summary = document.getElementById('summary');
+    const issuesEl = document.getElementById('issues');
+    const infoEl = document.getElementById('info');
+    const filtersEl = document.getElementById('filters');
+    const filtersLabel = document.getElementById('filtersLabel');
+    const pageSelector = document.getElementById('pageSelector');
+    const pageRadios = document.getElementById('pageRadios');
+    const tabsContainer = document.getElementById('tabsContainer');
+    const tabsEl = document.getElementById('tabs');
+
+    let latestResults = null;
+    let currentPage = 'all';
+    let currentSection = 'all';
+    let pageIssues = new Map();
+    let sectionIssues = new Map();
+    const ALL_TYPES = ['spacing', 'text-style', 'autolayout'];
+    let activeTypes = new Set(ALL_TYPES);
+    let allFilterActive = true;
+
+    function postToPlugin(message) {
+      parent.postMessage({ pluginMessage: message }, '*');
+    }
+
+    function renderPageSelector(results) {
+      // Group issues by page
+      pageIssues.clear();
+      const allIssues = [
+        ...(results.spacingIssues || []),
+        ...(results.textStyleIssues || []),
+        ...(results.autolayoutIssues || []),
+      ];
+
+      // Group by pageName
+      allIssues.forEach(issue => {
+        const pageName = issue.pageName || 'Unknown';
+        if (!pageIssues.has(pageName)) {
+          pageIssues.set(pageName, []);
+        }
+        pageIssues.get(pageName).push(issue);
+      });
+
+      // Show page selector if there are any issues
+      if (pageIssues.size > 0) {
+        pageSelector.style.display = '';
+        pageRadios.innerHTML = '';
+
+        // Add "All Pages" radio button if there are multiple pages
+        if (pageIssues.size > 1) {
+          const allRadio = document.createElement('div');
+          allRadio.className = 'page-radio';
+          allRadio.innerHTML = `
+            <input type="radio" name="page" value="all" id="page-all" ${currentPage === 'all' ? 'checked' : ''}>
+            <label for="page-all" class="page-radio-label">All Pages</label>
+            <span class="page-radio-count">${allIssues.length}</span>
+          `;
+          allRadio.addEventListener('click', () => {
+            currentPage = 'all';
+            currentSection = 'all';
+            document.getElementById('page-all').checked = true;
+            renderSectionTabs(results);
+            renderFilters(results);
+            renderIssues(results);
+          });
+          pageRadios.appendChild(allRadio);
+        }
+
+        // Add page radio buttons
+        Array.from(pageIssues.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .forEach(([pageName, issues]) => {
+            const pageRadio = document.createElement('div');
+            pageRadio.className = 'page-radio';
+            const radioId = `page-${pageName.replace(/[^a-zA-Z0-9]/g, '-')}`;
+            pageRadio.innerHTML = `
+              <input type="radio" name="page" value="${pageName}" id="${radioId}" ${currentPage === pageName ? 'checked' : ''}>
+              <label for="${radioId}" class="page-radio-label">${pageName}</label>
+              <span class="page-radio-count">${issues.length}</span>
+            `;
+            pageRadio.addEventListener('click', () => {
+              currentPage = pageName;
+              currentSection = 'all';
+              document.getElementById(radioId).checked = true;
+              renderSectionTabs(results);
+              renderFilters(results);
+              renderIssues(results);
+            });
+            pageRadios.appendChild(pageRadio);
+          });
+        
+        // If only one page, auto-select it
+        if (pageIssues.size === 1 && currentPage === 'all') {
+          currentPage = Array.from(pageIssues.keys())[0];
+        }
+      } else {
+        pageSelector.style.display = 'none';
+        currentPage = 'all';
+      }
+    }
+
+    function renderSectionTabs(results) {
+      // Get issues for current page
+      const pageFilteredIssues = currentPage === 'all' 
+        ? [
+            ...(results.spacingIssues || []),
+            ...(results.textStyleIssues || []),
+            ...(results.autolayoutIssues || []),
+          ]
+        : pageIssues.get(currentPage) || [];
+
+      // Group by section (frameName)
+      sectionIssues.clear();
+      pageFilteredIssues.forEach(issue => {
+        const sectionName = issue.frameName || 'Unknown';
+        if (!sectionIssues.has(sectionName)) {
+          sectionIssues.set(sectionName, []);
+        }
+        sectionIssues.get(sectionName).push(issue);
+      });
+
+      // Show section tabs if there are any issues
+      if (sectionIssues.size > 0) {
+        tabsContainer.style.display = '';
+        tabsEl.innerHTML = '';
+
+        // Add "All Sections" tab if there are multiple sections
+        if (sectionIssues.size > 1) {
+          const allTab = document.createElement('button');
+          allTab.className = 'tab' + (currentSection === 'all' ? ' active' : '');
+          allTab.textContent = `All Sections (${pageFilteredIssues.length})`;
+          allTab.addEventListener('click', () => {
+            currentSection = 'all';
+            renderSectionTabs(results);
+            renderFilters(results);
+            renderIssues(results);
+          });
+          tabsEl.appendChild(allTab);
+        }
+
+        // Add section tabs
+        Array.from(sectionIssues.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .forEach(([sectionName, issues]) => {
+            const tab = document.createElement('button');
+            tab.className = 'tab' + (currentSection === sectionName ? ' active' : '');
+            tab.textContent = `${sectionName} (${issues.length})`;
+            tab.addEventListener('click', () => {
+              currentSection = sectionName;
+              renderSectionTabs(results);
+              renderFilters(results);
+              renderIssues(results);
+            });
+            tabsEl.appendChild(tab);
+          });
+        
+        // If only one section, auto-select it
+        if (sectionIssues.size === 1 && currentSection === 'all') {
+          currentSection = Array.from(sectionIssues.keys())[0];
+        }
+      } else {
+        tabsContainer.style.display = 'none';
+        currentSection = 'all';
+      }
+    }
+
+    function getFilteredResults(results) {
+      let filteredIssues;
+      
+      if (currentPage === 'all') {
+        // All pages
+        filteredIssues = [
+          ...(results.spacingIssues || []),
+          ...(results.textStyleIssues || []),
+          ...(results.autolayoutIssues || []),
+        ];
+      } else {
+        // Specific page
+        filteredIssues = pageIssues.get(currentPage) || [];
+      }
+      
+      if (currentSection !== 'all') {
+        // Further filter by section
+        filteredIssues = filteredIssues.filter(issue => issue.frameName === currentSection);
+      }
+      
+      return {
+        ...results,
+        spacingIssues: filteredIssues.filter(issue => issue.type === 'spacing'),
+        textStyleIssues: filteredIssues.filter(issue => issue.type === 'text-style'),
+        autolayoutIssues: filteredIssues.filter(issue => issue.type === 'autolayout'),
+        totalIssues: filteredIssues.length
+      };
+    }
+
+    function renderFilters(results) {
+      const filteredResults = getFilteredResults(results);
+      const counts = new Map([
+        ['spacing', (filteredResults.spacingIssues || []).length],
+        ['text-style', (filteredResults.textStyleIssues || []).length],
+        ['autolayout', (filteredResults.autolayoutIssues || []).length],
+      ]);
+
+      filtersLabel.style.display = '';
+      filtersEl.style.display = '';
+      filtersEl.innerHTML = '';
+
+      // Add "All" filter button
+      const allBtn = document.createElement('button');
+      allBtn.className = 'filter-btn' + (allFilterActive ? ' active' : '');
+      allBtn.setAttribute('data-key', 'all');
+      const totalCount = (filteredResults.spacingIssues || []).length + 
+                        (filteredResults.textStyleIssues || []).length + 
+                        (filteredResults.autolayoutIssues || []).length;
+      allBtn.textContent = `All (${totalCount})`;
+      allBtn.addEventListener('click', () => {
+        allFilterActive = true;
+        activeTypes = new Set(ALL_TYPES);
+        renderFilters(results);
+        renderIssues(results);
+      });
+      filtersEl.appendChild(allBtn);
+
+      const makeBtn = (key, label) => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn' + (!allFilterActive && activeTypes.has(key) ? ' active' : '');
+        btn.setAttribute('data-key', key);
+        btn.textContent = `${label} (${counts.get(key) || 0})`;
+        btn.addEventListener('click', () => {
+          if (allFilterActive) {
+            // First click on any specific filter: deselect "All" and select only this filter
+            allFilterActive = false;
+            activeTypes.clear();
+            activeTypes.add(key);
+          } else {
+            // Subsequent clicks: toggle the filter
+            if (activeTypes.has(key)) {
+              activeTypes.delete(key);
+            } else {
+              activeTypes.add(key);
+            }
+            // If no filters selected, reactivate "All"
+            if (activeTypes.size === 0) {
+              allFilterActive = true;
+              activeTypes = new Set(ALL_TYPES);
+            }
+          }
+          renderFilters(results);
+          renderIssues(results);
+        });
+        return btn;
+      };
+
+      filtersEl.appendChild(makeBtn('spacing', 'Spacing'));
+      filtersEl.appendChild(makeBtn('text-style', 'Text Styles'));
+      filtersEl.appendChild(makeBtn('autolayout', 'Autolayout'));
+    }
+
+    function renderIssues(results) {
+      const filteredResults = getFilteredResults(results);
+      const allIssues = [
+        ...(filteredResults.spacingIssues || []),
+        ...(filteredResults.textStyleIssues || []),
+        ...(filteredResults.autolayoutIssues || []),
+      ].filter(issue => activeTypes.has(issue.type));
+
+      issuesEl.innerHTML = '';
+      if (!allIssues.length) {
+        let emptyMessage = 'No issues for the current filters.';
+        if (currentPage !== 'all' && currentSection !== 'all') {
+          emptyMessage = `No issues found in "${currentPage}" > "${currentSection}" for the current filters.`;
+        } else if (currentPage !== 'all') {
+          emptyMessage = `No issues found in "${currentPage}" for the current filters.`;
+        } else if (currentSection !== 'all') {
+          emptyMessage = `No issues found in "${currentSection}" for the current filters.`;
+        }
+        issuesEl.innerHTML = `<div class="empty">${emptyMessage}</div>`;
+        return;
+      }
+
+      // Group issues by type
+      const issueGroups = new Map();
+      allIssues.forEach(issue => {
+        const type = issue.type;
+        if (!issueGroups.has(type)) {
+          issueGroups.set(type, []);
+        }
+        issueGroups.get(type).push(issue);
+      });
+
+      // Define issue type metadata
+      const issueTypeInfo = {
+        'spacing': { title: 'Spacing Issues', description: 'Autolayout spacing not in multiples of 4px' },
+        'text-style': { title: 'Text Style Issues', description: 'Text elements not linked to text styles' },
+        'autolayout': { title: 'Layout Issues', description: 'Autolayout and positioning problems' }
+      };
+
+      // Render accordions for each issue type
+      Array.from(issueGroups.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .forEach(([issueType, issues], index) => {
+          const typeInfo = issueTypeInfo[issueType] || { title: issueType, description: '' };
+          const isFirstAccordion = index === 0;
+          
+          const accordion = document.createElement('div');
+          accordion.className = `accordion issue-type-${issueType}`;
+          
+          const header = document.createElement('div');
+          header.className = `accordion-header${isFirstAccordion ? '' : ' collapsed'}`;
+          header.innerHTML = `
+            <div class="accordion-title">
+              <span>${typeInfo.title}</span>
+              <span class="accordion-count">${issues.length}</span>
+            </div>
+            <span class="accordion-icon">▼</span>
+          `;
+          
+          const content = document.createElement('div');
+          content.className = `accordion-content${isFirstAccordion ? '' : ' collapsed'}`;
+          
+          const issuesContainer = document.createElement('div');
+          issuesContainer.className = 'accordion-issues';
+          
+          // Add issues to this accordion
+          issues.forEach(issue => {
+            const row = document.createElement('div');
+            row.className = 'issue';
+            row.innerHTML = `
+              <div>
+                <strong style="font-size:12px;">${issue.title}</strong>
+                <div class="meta">${issue.description || ''}</div>
+                <div class="meta">Element: ${issue.element || ''}</div>
+                ${issue.suggestion ? `<div class="meta">Suggestion: ${issue.suggestion}</div>` : ''}
+              </div>
+              <div class="row-actions">
+                <button type="button" data-action="goto" data-id="${issue.elementId}">Go to element</button>
+              </div>
+            `;
+            
+            // Attach safe metadata after insertion
+            const btnRef = row.querySelector('button[data-action="goto"]');
+            if (btnRef) {
+              btnRef.setAttribute('data-name', issue.element || '');
+            }
+            
+            row.addEventListener('click', (e) => {
+              const target = e.target;
+              if (!target) return;
+              const btn = (target.closest && target.closest('button[data-action]')) || null;
+              if (!btn) return;
+              const id = btn.getAttribute('data-id');
+              const name = btn.getAttribute('data-name') || '';
+              const action = btn.getAttribute('data-action');
+              if (!id || !action) return;
+              e.preventDefault();
+              e.stopPropagation();
+              if (action === 'goto') {
+                infoEl.style.display = '';
+                infoEl.textContent = 'Navigating to element…';
+                postToPlugin({ type: 'go-to-element', elementId: id, elementName: name, zoomLevel: 1.1, highlight: true });
+              }
+            });
+            
+            issuesContainer.appendChild(row);
+          });
+          
+          content.appendChild(issuesContainer);
+          accordion.appendChild(header);
+          accordion.appendChild(content);
+          
+          // Add click handler for accordion toggle
+          header.addEventListener('click', () => {
+            const isCollapsed = header.classList.contains('collapsed');
+            if (isCollapsed) {
+              header.classList.remove('collapsed');
+              content.classList.remove('collapsed');
+            } else {
+              header.classList.add('collapsed');
+              content.classList.add('collapsed');
+            }
+          });
+          
+          issuesEl.appendChild(accordion);
+        });
+    }
+
+    function renderResults(results) {
+      latestResults = results;
+      summary.style.display = '';
+      document.getElementById('totalIssues').textContent = String(results.totalIssues || 0);
+      document.getElementById('spacingCount').textContent = String((results.spacingIssues || []).length);
+      document.getElementById('textCount').textContent = String((results.textStyleIssues || []).length);
+      document.getElementById('autoCount').textContent = String((results.autolayoutIssues || []).length);
+
+      renderPageSelector(results);
+      renderSectionTabs(results);
+      renderFilters(results);
+      renderIssues(results);
+    }
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data && event.data.pluginMessage;
+      if (!msg) return;
+      if (msg.type === 'scan-complete') {
+        infoEl.style.display = '';
+        infoEl.textContent = `Scanned "${msg.results.fileName}" · Pages: ${msg.results.documentInfo.pageCount} · Elements: ${msg.results.documentInfo.elementCount}`;
+        renderResults(msg.results);
+        scanBtn.disabled = false;
+      }
+      if (msg.type === 'scan-error') {
+        infoEl.style.display = '';
+        infoEl.textContent = `Error: ${msg.error}`;
+        scanBtn.disabled = false;
+      }
+      if (msg.type === 'element-selected') {
+        infoEl.style.display = '';
+        infoEl.textContent = 'Element selected.';
+      }
+      if (msg.type === 'element-focused') {
+        infoEl.style.display = '';
+        infoEl.textContent = 'Element focused.';
+      }
+      if (msg.type === 'element-pan-zoom-complete') {
+        infoEl.style.display = '';
+        infoEl.textContent = 'Jumped to element.';
+      }
+      if (msg.type === 'element-highlighted') {
+        infoEl.style.display = '';
+        infoEl.textContent = 'Highlighted element.';
+      }
+      if (msg.type === 'element-not-found') {
+        infoEl.style.display = '';
+        infoEl.textContent = 'Could not locate that element in the current page.';
+      }
+    });
+
+    scanBtn.addEventListener('click', () => {
+      const spacingValue = parseInt(document.getElementById('spacingValue').value) || 4;
+      console.log('UI: Sending spacing value:', spacingValue);
+      scanBtn.disabled = true;
+      issuesEl.innerHTML = '<div class="empty">Scanning…</div>';
+      pageSelector.style.display = 'none';
+      tabsContainer.style.display = 'none';
+      filtersEl.style.display = 'none';
+      filtersLabel.style.display = 'none';
+      currentPage = 'all';
+      currentSection = 'all';
+      activeTypes = new Set(ALL_TYPES);
+      allFilterActive = true;
+      postToPlugin({ type: 'scan-document', spacingValue: spacingValue });
+    });
+
+
+  </script>
+</body>
+</html>
