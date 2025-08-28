@@ -575,6 +575,173 @@
             color: #155724;
         }
 
+        /* Inspiration UI Styles */
+        #inspiration-container,
+        #inspiration-results-container {
+            padding: 20px 16px;
+        }
+
+        .inspiration-response {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .inspiration-response h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .inspiration-response p {
+            margin: 8px 0;
+        }
+
+        .inspiration-links {
+            margin-bottom: 20px;
+        }
+
+        .inspiration-link {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .inspiration-link:hover {
+            border-color: #0066cc;
+            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
+        }
+
+        .inspiration-link-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .inspiration-link-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+            flex: 1;
+        }
+
+        .inspiration-link-score {
+            font-size: 11px;
+            color: #666;
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+        }
+
+        .inspiration-link-meta {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .inspiration-link-app {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .inspiration-link-category {
+            margin-left: 8px;
+        }
+
+        .inspiration-link-tags {
+            margin-bottom: 8px;
+        }
+
+        .inspiration-tag {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        .inspiration-link-relevance {
+            font-size: 12px;
+            color: #555;
+            font-style: italic;
+            line-height: 1.4;
+        }
+
+        .inspiration-link-url {
+            font-size: 10px;
+            color: #0066cc;
+            text-decoration: none;
+            word-break: break-all;
+            margin-top: 8px;
+            display: block;
+        }
+
+        .inspiration-link-url:hover {
+            text-decoration: underline;
+        }
+
+        /* Inspiration button styles */
+        #inspiration-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        #inspiration-btn:hover:not(:disabled) {
+            background: #218838;
+        }
+
+        #search-inspiration-btn {
+            background: #0066cc;
+            color: white;
+        }
+
+        #search-inspiration-btn:hover:not(:disabled) {
+            background: #0052a3;
+        }
+
+        #search-inspiration-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #back-to-selection-btn,
+        #back-to-inspiration-btn {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        #back-to-selection-btn:hover,
+        #back-to-inspiration-btn:hover {
+            background: #e8e8e8;
+        }
+
+        #close-inspiration-btn {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        #close-inspiration-btn:hover {
+            background: #e8e8e8;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 400px) {
             .container {
@@ -598,6 +765,14 @@
                 min-height: 250px;
                 padding: 12px;
             }
+
+            .inspiration-response {
+                padding: 16px;
+            }
+
+            .inspiration-link {
+                padding: 12px;
+            }
         }
     </style>
 </head>
@@ -607,8 +782,8 @@
         <!-- Initial Selection UI -->
         <div id="selection-container">
             <div class="form-header">
-                <h2>Document This Design</h2>
-                <div id="selection-info">Select a frame or section to document</div>
+                <h2>One Brain AI</h2>
+                <div id="selection-info">Document designs or find inspiration</div>
             </div>
 
             <div id="selection-status" class="selection-status">
@@ -619,7 +794,50 @@
 
             <div class="button-group">
                 <button type="button" id="document-btn" disabled>Document Selection</button>
+                <button type="button" id="inspiration-btn">Find Inspiration</button>
                 <button type="button" id="close-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Inspiration Search UI -->
+        <div id="inspiration-container" style="display: none;">
+            <div class="form-header">
+                <h2>Find Design Inspiration</h2>
+                <div id="inspiration-info">Search Mobbin for relevant UI patterns</div>
+            </div>
+
+            <div class="form-group large">
+                <label for="problem-statement">What are you working on?</label>
+                <textarea id="problem-statement" class="textarea-large"
+                    placeholder="Describe your design challenge...&#10;&#10;Example: Working on SME card onboarding; need KYC + limits flows for business users"
+                    rows="4"></textarea>
+                <div class="help-text">Describe your design problem or what you're trying to build</div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" id="back-to-selection-btn">Back</button>
+                <button type="button" id="search-inspiration-btn">Search Mobbin</button>
+            </div>
+        </div>
+
+        <!-- Inspiration Results UI -->
+        <div id="inspiration-results-container" style="display: none;">
+            <div class="form-header">
+                <h2>Inspiration Results</h2>
+                <div id="inspiration-results-info">Found on Mobbin</div>
+            </div>
+
+            <div id="inspiration-response" class="inspiration-response">
+                <!-- Conversational response will be inserted here -->
+            </div>
+
+            <div id="inspiration-links" class="inspiration-links">
+                <!-- Links will be inserted here -->
+            </div>
+
+            <div class="button-group">
+                <button type="button" id="back-to-inspiration-btn">New Search</button>
+                <button type="button" id="close-inspiration-btn">Close</button>
             </div>
         </div>
 
@@ -876,6 +1094,14 @@
             const documentBtn = document.getElementById("document-btn");
             const closeBtn = document.getElementById("close-btn");
 
+            // Initialize inspiration UI elements
+            const inspirationBtn = document.getElementById("inspiration-btn");
+            const backToSelectionBtn = document.getElementById("back-to-selection-btn");
+            const searchInspirationBtn = document.getElementById("search-inspiration-btn");
+            const backToInspirationBtn = document.getElementById("back-to-inspiration-btn");
+            const closeInspirationBtn = document.getElementById("close-inspiration-btn");
+            const problemStatementTextarea = document.getElementById("problem-statement");
+
             saveButton.addEventListener("click", handleSave);
             cancelButton.addEventListener("click", handleCancel);
             sendAiButton.addEventListener("click", handleSendToAI);
@@ -890,6 +1116,16 @@
             // Add selection UI event listeners
             documentBtn.addEventListener("click", handleDocumentSelection);
             closeBtn.addEventListener("click", handleClose);
+
+            // Add inspiration UI event listeners
+            inspirationBtn.addEventListener("click", handleShowInspiration);
+            backToSelectionBtn.addEventListener("click", handleBackToSelection);
+            searchInspirationBtn.addEventListener("click", handleSearchInspiration);
+            backToInspirationBtn.addEventListener("click", handleBackToInspiration);
+            closeInspirationBtn.addEventListener("click", handleClose);
+
+            // Auto-resize problem statement textarea
+            problemStatementTextarea.addEventListener("input", autoResize);
 
             const textareas = form.querySelectorAll("textarea");
             textareas.forEach((textarea) => {
@@ -1444,6 +1680,148 @@
             }
         }
 
+        // Inspiration UI Functions
+        function handleShowInspiration() {
+            logUI("SHOW_INSPIRATION_CLICKED", {});
+
+            // Show inspiration search container
+            document.getElementById("selection-container").style.display = "none";
+            document.getElementById("inspiration-container").style.display = "block";
+            document.getElementById("inspiration-results-container").style.display = "none";
+            document.getElementById("status-container").style.display = "none";
+
+            // Clear previous input
+            document.getElementById("problem-statement").value = "";
+
+            // Focus on textarea
+            document.getElementById("problem-statement").focus();
+        }
+
+        function handleBackToSelection() {
+            logUI("BACK_TO_SELECTION_CLICKED", {});
+
+            // Show selection container
+            showSelectionContainer();
+        }
+
+        function handleSearchInspiration() {
+            logUI("SEARCH_INSPIRATION_CLICKED", {});
+
+            const problemStatement = document.getElementById("problem-statement").value.trim();
+
+            if (!problemStatement) {
+                alert("Please describe what you're working on before searching.");
+                return;
+            }
+
+            const searchBtn = document.getElementById("search-inspiration-btn");
+            searchBtn.disabled = true;
+            searchBtn.textContent = "Searching...";
+
+            // Show loading status
+            showStatus("Searching Mobbin for inspiration...", 1, 3);
+
+            // Send search request to backend
+            parent.postMessage({
+                pluginMessage: {
+                    type: "search-inspiration",
+                    problemStatement: problemStatement
+                }
+            }, "*");
+        }
+
+        function handleBackToInspiration() {
+            logUI("BACK_TO_INSPIRATION_CLICKED", {});
+
+            // Show inspiration search container again
+            document.getElementById("selection-container").style.display = "none";
+            document.getElementById("inspiration-container").style.display = "block";
+            document.getElementById("inspiration-results-container").style.display = "none";
+            document.getElementById("status-container").style.display = "none";
+
+            // Reset search button
+            const searchBtn = document.getElementById("search-inspiration-btn");
+            searchBtn.disabled = false;
+            searchBtn.textContent = "Search Mobbin";
+        }
+
+        function showInspirationResults(data) {
+            logUI("SHOW_INSPIRATION_RESULTS", {
+                hasResponse: !!data.conversationalResponse,
+                linksCount: data.mobbinLinks?.length || 0
+            });
+
+            // Update conversational response
+            const responseDiv = document.getElementById("inspiration-response");
+            responseDiv.innerHTML = `<p>${data.conversationalResponse || "Here are some inspiration results from Mobbin:"}</p>`;
+
+            // Update links
+            const linksDiv = document.getElementById("inspiration-links");
+            linksDiv.innerHTML = "";
+
+            if (data.mobbinLinks && data.mobbinLinks.length > 0) {
+                data.mobbinLinks.forEach(link => {
+                    const linkElement = createInspirationLinkElement(link);
+                    linksDiv.appendChild(linkElement);
+                });
+            } else {
+                linksDiv.innerHTML = "<p><em>No inspiration links found. Try a different search.</em></p>";
+            }
+
+            // Show results container
+            document.getElementById("selection-container").style.display = "none";
+            document.getElementById("inspiration-container").style.display = "none";
+            document.getElementById("inspiration-results-container").style.display = "block";
+            document.getElementById("status-container").style.display = "none";
+        }
+
+        function showInspirationError(message) {
+            logUI("SHOW_INSPIRATION_ERROR", { message });
+
+            // Show error in status container
+            showError(message || "Failed to search for inspiration. Please try again.");
+
+            // Reset search button
+            const searchBtn = document.getElementById("search-inspiration-btn");
+            if (searchBtn) {
+                searchBtn.disabled = false;
+                searchBtn.textContent = "Search Mobbin";
+            }
+
+            // Show back button to return to inspiration search
+            setTimeout(() => {
+                handleBackToInspiration();
+            }, 3000);
+        }
+
+        function createInspirationLinkElement(link) {
+            const linkDiv = document.createElement("div");
+            linkDiv.className = "inspiration-link";
+
+            // Add click handler to open link
+            linkDiv.addEventListener("click", () => {
+                window.open(link.url, "_blank");
+            });
+
+            linkDiv.innerHTML = `
+                <div class="inspiration-link-header">
+                    <h4 class="inspiration-link-title">${link.title}</h4>
+                    <span class="inspiration-link-score">${Math.round(link.relevanceScore * 100)}%</span>
+                </div>
+                <div class="inspiration-link-meta">
+                    <span class="inspiration-link-app">${link.appName}</span>
+                    <span class="inspiration-link-category">• ${link.category}</span>
+                </div>
+                <div class="inspiration-link-tags">
+                    ${link.tags.map(tag => `<span class="inspiration-tag">${tag}</span>`).join("")}
+                </div>
+                <div class="inspiration-link-relevance">${link.whyRelevant}</div>
+                <a href="${link.url}" class="inspiration-link-url" target="_blank" onclick="event.stopPropagation();">${link.url}</a>
+            `;
+
+            return linkDiv;
+        }
+
         window.onmessage = (event) => {
             logUI("MESSAGE_RECEIVED", {
                 hasPluginMessage: !!event.data.pluginMessage,
@@ -1517,6 +1895,22 @@
                         selectionName: selectionInfo?.name
                     });
                     updateSelectionUI(selectionInfo);
+                    break;
+                case "inspiration-results":
+                    const inspirationData = msg.data;
+                    logUI("INSPIRATION_RESULTS_MESSAGE", {
+                        hasResponse: !!inspirationData.conversationalResponse,
+                        linksCount: inspirationData.mobbinLinks?.length || 0
+                    });
+                    showInspirationResults(inspirationData);
+                    break;
+                case "inspiration-error":
+                    logUI("INSPIRATION_ERROR_MESSAGE", { message: msg.message });
+                    showInspirationError(msg.message);
+                    break;
+                case "inspiration-loading":
+                    logUI("INSPIRATION_LOADING_MESSAGE", { message: msg.message });
+                    showStatus(msg.message, 1, 2);
                     break;
                 case "success":
                     logUI("SUCCESS_MESSAGE", { message: msg.message });
