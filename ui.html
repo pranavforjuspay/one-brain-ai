@@ -367,6 +367,17 @@
       content: '📐';
       font-size: 14px;
     }
+    .ignore-all-container {
+      text-align: center;
+    }
+    .ignore-all-btn:hover {
+      background: #7f1d1d !important;
+      border-color: #7f1d1d !important;
+    }
+    .ignore-all-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
   </style>
 </head>
 <body>
@@ -407,6 +418,10 @@
         <h2>Issues</h2>
         <div id="issues"></div>
       </div>
+      
+      <div id="ignoreAllContainer" class="ignore-all-container" style="display:none; margin-top: 20px; padding-top: 16px; border-top: 1px solid #374151;">
+        <button id="ignoreAllBtn" class="ignore-all-btn" style="background: #530E0D; border-color: #530E0D; color: #fff; padding: 10px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid; transition: all 0.2s ease; width: 100%;">Ignore All</button>
+      </div>
     </main>
   </div>
 
@@ -430,6 +445,7 @@
     const ALL_TYPES = ['spacing', 'text-style', 'autolayout'];
     let activeTypes = new Set(ALL_TYPES);
     let allFilterActive = true;
+    let ignoredIssues = new Set(); // Track ignored issue IDs
 
     function postToPlugin(message) {
       parent.postMessage({ pluginMessage: message }, '*');
@@ -444,8 +460,8 @@
         ...(results.autolayoutIssues || []),
       ];
 
-      // Group by pageName
-      allIssues.forEach(issue => {
+      // Group by pageName (excluding ignored issues)
+      allIssues.filter(issue => !ignoredIssues.has(issue.elementId)).forEach(issue => {
         const pageName = issue.pageName || 'Unknown';
         if (!pageIssues.has(pageName)) {
           pageIssues.set(pageName, []);
@@ -521,9 +537,9 @@
           ]
         : pageIssues.get(currentPage) || [];
 
-      // Group by section (frameName)
+      // Group by section (frameName) (excluding ignored issues)
       sectionIssues.clear();
-      pageFilteredIssues.forEach(issue => {
+      pageFilteredIssues.filter(issue => !ignoredIssues.has(issue.elementId)).forEach(issue => {
         const sectionName = issue.frameName || 'Unknown';
         if (!sectionIssues.has(sectionName)) {
           sectionIssues.set(sectionName, []);
@@ -596,12 +612,15 @@
         filteredIssues = filteredIssues.filter(issue => issue.frameName === currentSection);
       }
       
+      // Filter out ignored issues
+      const nonIgnoredIssues = filteredIssues.filter(issue => !ignoredIssues.has(issue.elementId));
+      
       return {
         ...results,
-        spacingIssues: filteredIssues.filter(issue => issue.type === 'spacing'),
-        textStyleIssues: filteredIssues.filter(issue => issue.type === 'text-style'),
-        autolayoutIssues: filteredIssues.filter(issue => issue.type === 'autolayout'),
-        totalIssues: filteredIssues.length
+        spacingIssues: nonIgnoredIssues.filter(issue => issue.type === 'spacing'),
+        textStyleIssues: nonIgnoredIssues.filter(issue => issue.type === 'text-style'),
+        autolayoutIssues: nonIgnoredIssues.filter(issue => issue.type === 'autolayout'),
+        totalIssues: nonIgnoredIssues.length
       };
     }
 
@@ -616,6 +635,21 @@
       filtersLabel.style.display = '';
       filtersEl.style.display = '';
       filtersEl.innerHTML = '';
+      
+      // Show/hide ignore all button based on visible issues
+      const ignoreAllContainer = document.getElementById('ignoreAllContainer');
+      const ignoreAllBtn = document.getElementById('ignoreAllBtn');
+      const totalVisibleIssues = (filteredResults.spacingIssues || []).length + 
+                                 (filteredResults.textStyleIssues || []).length + 
+                                 (filteredResults.autolayoutIssues || []).length;
+      
+      if (totalVisibleIssues > 0) {
+        ignoreAllContainer.style.display = '';
+        ignoreAllBtn.textContent = `Ignore All (${totalVisibleIssues})`;
+        ignoreAllBtn.disabled = false;
+      } else {
+        ignoreAllContainer.style.display = 'none';
+      }
 
       // Add "All" filter button
       const allBtn = document.createElement('button');
@@ -745,7 +779,8 @@
                 ${issue.suggestion ? `<div class="meta">Suggestion: ${issue.suggestion}</div>` : ''}
               </div>
               <div class="row-actions">
-                <button type="button" data-action="goto" data-id="${issue.elementId}">Go to element</button>
+                <button type="button" data-action="goto" data-id="${issue.elementId}" style="background: #4A6182; border-color: #4A6182;">Go to element</button>
+                <button type="button" data-action="ignore" data-id="${issue.elementId}" style="background: #530E0D; border-color: #530E0D;">Ignore</button>
               </div>
             `;
             
@@ -770,6 +805,15 @@
                 infoEl.style.display = '';
                 infoEl.textContent = 'Navigating to element…';
                 postToPlugin({ type: 'go-to-element', elementId: id, elementName: name, zoomLevel: 1.1, highlight: true });
+              } else if (action === 'ignore') {
+                ignoredIssues.add(id);
+                infoEl.style.display = '';
+                infoEl.textContent = 'Issue ignored.';
+                // Re-render to update counts and hide the ignored issue
+                renderPageSelector(latestResults);
+                renderSectionTabs(latestResults);
+                renderFilters(latestResults);
+                renderIssues(latestResults);
               }
             });
             
@@ -855,11 +899,38 @@
       tabsContainer.style.display = 'none';
       filtersEl.style.display = 'none';
       filtersLabel.style.display = 'none';
+      document.getElementById('ignoreAllContainer').style.display = 'none';
       currentPage = 'all';
       currentSection = 'all';
       activeTypes = new Set(ALL_TYPES);
       allFilterActive = true;
+      ignoredIssues.clear(); // Reset ignored issues on new scan
       postToPlugin({ type: 'scan-document', spacingValue: spacingValue });
+    });
+    
+    // Ignore All button event listener
+    document.getElementById('ignoreAllBtn').addEventListener('click', () => {
+      const filteredResults = getFilteredResults(latestResults);
+      const allVisibleIssues = [
+        ...(filteredResults.spacingIssues || []),
+        ...(filteredResults.textStyleIssues || []),
+        ...(filteredResults.autolayoutIssues || []),
+      ].filter(issue => activeTypes.has(issue.type));
+      
+      // Add all visible issue IDs to ignored set
+      allVisibleIssues.forEach(issue => {
+        ignoredIssues.add(issue.elementId);
+      });
+      
+      const ignoredCount = allVisibleIssues.length;
+      infoEl.style.display = '';
+      infoEl.textContent = `${ignoredCount} issue${ignoredCount !== 1 ? 's' : ''} ignored.`;
+      
+      // Re-render to update counts and hide all ignored issues
+      renderPageSelector(latestResults);
+      renderSectionTabs(latestResults);
+      renderFilters(latestResults);
+      renderIssues(latestResults);
     });
 
 
