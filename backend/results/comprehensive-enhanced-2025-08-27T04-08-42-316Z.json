@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "timestamp": "2025-08-27T04:08:42.316Z",
+    "summary": {
+      "totalURLs": 0,
+      "appCount": 0,
+      "flowCount": 0,
+      "screenCount": 0,
+      "keywordCount": 0,
+      "executionTime": 376211
+    },
+    "generatedBy": "Mobbin Design Inspiration Engine"
+  },
+  "results": {
+    "apps": {},
+    "flows": {},
+    "screens": {}
+  },
+  "execution": {
+    "routes": [
+      {
+        "type": "apps",
+        "keyword": "onboarding",
+        "platform": "ios",
+        "success": false,
+        "executionTime": 118284,
+        "urlCount": 0,
+        "strategy": "failed",
+        "errors": [
+          "Authentication required but failed: Authentication failed: Authentication verification failed: Still showing login buttons after authentication attempt. Login was not successful."
+        ]
+      },
+      {
+        "type": "flows",
+        "keyword": "onboarding",
+        "platform": "ios",
+        "success": false,
+        "executionTime": 51390,
+        "urlCount": 0,
+        "strategy": "failed",
+        "errors": [
+          "Authentication required but failed: Authentication failed: Authentication verification failed: Still showing login buttons after authentication attempt. Login was not successful."
+        ]
+      },
+      {
+        "type": "screens",
+        "keyword": "onboarding",
+        "platform": "ios",
+        "success": false,
+        "executionTime": 50975,
+        "urlCount": 0,
+        "strategy": "failed",
+        "errors": [
+          "Authentication required but failed: Authentication failed: Authentication verification failed: Still showing login buttons after authentication attempt. Login was not successful."
+        ]
+      },
+      {
+        "type": "apps",
+        "keyword": "fintech",
+        "platform": "ios",
+        "success": false,
+        "executionTime": 51359,
+        "urlCount": 0,
+        "strategy": "failed",
+        "errors": [
+          "Authentication required but failed: Authentication failed: Authentication verification failed: Still showing login buttons after authentication attempt. Login was not successful."
+        ]
+      },
+      {
+        "type": "flows",
+        "keyword": "fintech",
+        "platform": "ios",
+        "success": false,
+        "executionTime": 51202,
+        "urlCount": 0,
+        "strategy": "failed",
+        "errors": [
+          "Authentication required but failed: Authentication failed: Authentication verification failed: Still showing login buttons after authentication attempt. Login was not successful."
+        ]
+      },
+      {
+        "type": "screens",
+        "keyword": "fintech",
+        "platform": "ios",
+        "success": false,
+        "executionTime": 50997,
+        "urlCount": 0,
+        "strategy": "failed",
+        "errors": [
+          "Authentication required but failed: Authentication failed: Authentication verification failed: Still showing login buttons after authentication attempt. Login was not successful."
+        ]
+      }
+    ]
+  }
+}

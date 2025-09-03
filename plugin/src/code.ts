@@ -499,6 +499,190 @@ figma.ui.onmessage = async (msg) => {
             await runDocumentationWorkflow();
         }
 
+        if (msg.type === 'search-inspiration') {
+            const { problemStatement } = msg;
+            const searchStartTime = Date.now();
+            const searchId = Math.random().toString(36).substring(7);
+
+            logWorkflow('INSPIRATION_SEARCH_REQUEST', {
+                searchId,
+                query: problemStatement?.substring(0, 100) + (problemStatement?.length > 100 ? '...' : ''),
+                queryLength: problemStatement?.length || 0,
+                timestamp: new Date().toISOString()
+            });
+
+            try {
+                // Show loading state
+                logWorkflow('INSPIRATION_SEARCH_UI_LOADING', {
+                    searchId,
+                    message: 'Searching for design inspiration...'
+                });
+                figma.ui.postMessage({
+                    type: 'inspiration-loading',
+                    message: 'Searching for design inspiration...'
+                });
+
+                // Try multiple API URLs for better compatibility
+                const apiUrls = [
+                    'http://localhost:8787/inspiration/mobbin-search',
+                    'http://127.0.0.1:8787/inspiration/mobbin-search'
+                ];
+                const requestBody = { problemStatement };
+
+                logWorkflow('INSPIRATION_SEARCH_API_REQUEST', {
+                    searchId,
+                    urls: apiUrls,
+                    method: 'POST',
+                    bodySize: JSON.stringify(requestBody).length,
+                    problemStatementLength: problemStatement?.length || 0
+                });
+
+                let response;
+                let lastError;
+
+                // Try each URL until one works
+                for (let i = 0; i < apiUrls.length; i++) {
+                    const apiUrl = apiUrls[i];
+
+                    try {
+                        logWorkflow('INSPIRATION_SEARCH_TRYING_URL', {
+                            searchId,
+                            attempt: i + 1,
+                            url: apiUrl
+                        });
+
+                        // Make API call to backend inspiration search with timeout
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => {
+                            logWorkflow('INSPIRATION_SEARCH_TIMEOUT', {
+                                searchId,
+                                url: apiUrl,
+                                timeoutMs: 30000
+                            });
+                            controller.abort();
+                        }, 30000); // 30 second timeout
+
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(requestBody),
+                            signal: controller.signal
+                        });
+
+                        clearTimeout(timeoutId);
+
+                        logWorkflow('INSPIRATION_SEARCH_URL_SUCCESS', {
+                            searchId,
+                            url: apiUrl,
+                            status: response.status
+                        });
+
+                        break; // Success, exit the loop
+
+                    } catch (urlError) {
+                        lastError = urlError;
+                        const errorMessage = urlError instanceof Error ? urlError.message : String(urlError);
+                        const errorType = urlError instanceof Error ? urlError.name : typeof urlError;
+
+                        logWorkflow('INSPIRATION_SEARCH_URL_FAILED', {
+                            searchId,
+                            url: apiUrl,
+                            error: errorMessage,
+                            errorType: errorType
+                        });
+
+                        // If this was the last URL, we'll throw the error
+                        if (i === apiUrls.length - 1) {
+                            throw urlError;
+                        }
+
+                        // Otherwise, continue to next URL
+                        continue;
+                    }
+                }
+
+                if (!response) {
+                    throw lastError || new Error('All API URLs failed');
+                }
+
+                const apiDuration = Date.now() - searchStartTime;
+                logWorkflow('INSPIRATION_SEARCH_API_RESPONSE', {
+                    searchId,
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    duration: `${apiDuration}ms`
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                const parseTime = Date.now() - searchStartTime;
+
+                logWorkflow('INSPIRATION_SEARCH_RESPONSE_PARSED', {
+                    searchId,
+                    hasConversationalResponse: !!result.conversationalResponse,
+                    hasMobbinLinks: !!result.mobbinLinks,
+                    hasSearchIntents: !!result.searchIntents,
+                    mobbinLinksCount: result.mobbinLinks?.length || 0,
+                    conversationalResponseLength: result.conversationalResponse?.length || 0,
+                    searchIntentsCount: result.searchIntents ? Object.values(result.searchIntents).flat().length : 0,
+                    totalDuration: `${parseTime}ms`
+                });
+
+                logWorkflow('INSPIRATION_SEARCH_SUCCESS', {
+                    searchId,
+                    resultsCount: result.mobbinLinks?.length || 0,
+                    hasResponse: !!result.conversationalResponse,
+                    responseLength: result.conversationalResponse?.length || 0,
+                    searchIntents: result.searchIntents,
+                    totalDuration: `${parseTime}ms`
+                });
+
+                // Send results to UI
+                logWorkflow('INSPIRATION_SEARCH_SENDING_TO_UI', {
+                    searchId,
+                    messageType: 'inspiration-results',
+                    dataKeys: Object.keys(result)
+                });
+                figma.ui.postMessage({
+                    type: 'inspiration-results',
+                    data: result
+                });
+
+            } catch (error) {
+                const errorDuration = Date.now() - searchStartTime;
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                const errorStack = error instanceof Error ? error.stack : undefined;
+
+                logWorkflow('INSPIRATION_SEARCH_ERROR', {
+                    searchId,
+                    error: errorMessage,
+                    errorStack,
+                    query: problemStatement?.substring(0, 50),
+                    duration: `${errorDuration}ms`,
+                    errorType: error instanceof Error ? error.constructor.name : typeof error
+                });
+
+                console.error('[one-brain-ai] Inspiration search failed:', error);
+
+                // Send error to UI
+                logWorkflow('INSPIRATION_SEARCH_SENDING_ERROR_TO_UI', {
+                    searchId,
+                    messageType: 'inspiration-error',
+                    errorMessage: 'Failed to search for inspiration. Please check your connection and try again.'
+                });
+                figma.ui.postMessage({
+                    type: 'inspiration-error',
+                    message: 'Failed to search for inspiration. Please check your connection and try again.'
+                });
+            }
+        }
+
         if (msg.type === 'cancel') {
             logWorkflow('CANCEL_REQUEST', {});
             figma.closePlugin();
