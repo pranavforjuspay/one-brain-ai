@@ -39,7 +39,7 @@ export class PlaywrightMCPClient {
                 browserType: options.browserType || 'chromium',
                 width: options.width || 1280,
                 height: options.height || 720,
-                headless: options.debugMode ? false : (options.headless !== false), // Show browser in debug mode
+                headless: options.headless !== false, // Respect headless setting regardless of debug mode
                 timeout: options.timeout || 30000
             });
 

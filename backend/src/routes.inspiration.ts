@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { WebScrapingService } from './scraping/core/WebScrapingService.js';
+import { UnifiedScrapingService } from './scraping/core/UnifiedScrapingService';
 import { SearchIntent as ScrapingSearchIntent, DesignResult } from './scraping/types/scraping.types.js';
 
 const execAsync = promisify(exec);
@@ -28,8 +28,8 @@ export type MobbinResult = {
     relevanceScore: number;
 };
 
-// Global web scraping service instance
-let webScrapingService: WebScrapingService | null = null;
+// Global unified scraping service instance
+let unifiedScrapingService: UnifiedScrapingService | null = null;
 
 // Get Google Cloud access token
 async function getAccessToken(): Promise<string> {
@@ -206,8 +206,8 @@ Return JSON only.`;
     }
 }
 
-// Search Mobbin using intelligent web scraping
-async function searchMobbin(searchIntents: SearchIntent, app: FastifyInstance, debugMode: boolean = false): Promise<MobbinResult[]> {
+// Search Mobbin using LLM-enhanced unified scraping
+async function searchMobbin(searchIntents: SearchIntent, problemStatement: string, app: FastifyInstance, debugMode: boolean = false): Promise<{ mobbinResults: MobbinResult[]; finalKeywords: string[] }> {
     const searchStartTime = Date.now();
     console.log(`[${new Date().toISOString()}] [INSPIRATION] MOBBIN_SEARCH_START:`, {
         searchIntents,
@@ -216,44 +216,73 @@ async function searchMobbin(searchIntents: SearchIntent, app: FastifyInstance, d
     });
 
     try {
-        app.log.info({ searchIntents }, 'Starting intelligent Mobbin search with Playwright MCP');
+        app.log.info({ searchIntents }, 'Starting LLM-enhanced Mobbin search with UnifiedScrapingService');
 
-        // Initialize web scraping service if not already done
-        if (!webScrapingService) {
-            console.log(`[${new Date().toISOString()}] [INSPIRATION] INITIALIZING_WEB_SCRAPING_SERVICE`);
-            webScrapingService = new WebScrapingService(app);
+        // Initialize unified scraping service if not already done
+        if (!unifiedScrapingService) {
+            console.log(`[${new Date().toISOString()}] [INSPIRATION] INITIALIZING_UNIFIED_SCRAPING_SERVICE`);
+            unifiedScrapingService = new UnifiedScrapingService(app);
         }
 
-        // Convert SearchIntent to ScrapingSearchIntent format
-        const scrapingSearchIntents: ScrapingSearchIntent = {
-            patterns: searchIntents.patterns,
-            screens: searchIntents.screens,
-            comparables: searchIntents.comparables,
-            keywords: searchIntents.keywords
-        };
-
-        console.log(`[${new Date().toISOString()}] [INSPIRATION] CALLING_WEB_SCRAPING_SERVICE:`, {
-            scrapingSearchIntents,
-            serviceInitialized: !!webScrapingService
+        // Use the LLM-enhanced unified scraping service directly with the problem statement
+        console.log(`[${new Date().toISOString()}] [INSPIRATION] CALLING_UNIFIED_SCRAPING_SERVICE:`, {
+            problemStatement: problemStatement.substring(0, 100) + '...',
+            serviceInitialized: !!unifiedScrapingService
         });
 
-        // Use the intelligent web scraping service with debug mode
-        const designResults = await webScrapingService.searchDesigns(scrapingSearchIntents, debugMode);
+        // Use the LLM-enhanced unified scraping service with the problem statement
+        const result = await unifiedScrapingService.scrapeFromUserQueryWithExplanation(problemStatement);
 
-        // Convert DesignResult[] to MobbinResult[] format for backward compatibility
-        const mobbinResults: MobbinResult[] = designResults.map(result => ({
-            title: result.title,
+        // DEBUG: Log the full result structure to see what's being returned
+        console.log(`[${new Date().toISOString()}] [INSPIRATION] UNIFIED_SCRAPING_RESULT_DEBUG:`, {
+            resultKeys: Object.keys(result),
+            hasKeywords: !!result.keywords,
+            keywords: result.keywords,
+            keywordsType: typeof result.keywords,
+            keywordsLength: result.keywords?.length,
+            resultStructure: JSON.stringify(result, null, 2).substring(0, 500) + '...'
+        });
+
+        // Extract the final keywords that will be used for Mobbin search
+        const finalKeywords = result.keywords || [];
+        console.log(`[${new Date().toISOString()}] [INSPIRATION] FINAL_KEYWORDS_EXTRACTED:`, {
+            finalKeywords,
+            keywordCount: finalKeywords.length
+        });
+
+        const designResults = result.results || [];
+
+        // Convert UnifiedScrapingResult[] to MobbinResult[] format for backward compatibility
+        const mobbinResults: MobbinResult[] = designResults.map((result, index) => ({
+            title: `Design Pattern ${index + 1}`,
             url: result.url,
-            appName: result.appName,
-            category: result.category,
-            tags: result.tags,
-            whyRelevant: result.whyRelevant,
-            relevanceScore: result.relevanceScore
+            appName: "Mobbin App",
+            category: "Design",
+            tags: [result.keyword],
+            whyRelevant: `Relevant design pattern for ${result.keyword}`,
+            relevanceScore: 0.8
         }));
+
+        // Extract unique keywords from mobbinResults tags (these are the V2 LLM-extracted keywords)
+        const extractedKeywords = [...new Set(mobbinResults.map(result => result.tags[0]))];
+        const finalKeywordsFromResults = extractedKeywords.filter(keyword => keyword && keyword.trim().length > 0);
+
+        // Use extracted keywords if finalKeywords is empty
+        if (finalKeywords.length === 0 && finalKeywordsFromResults.length > 0) {
+            finalKeywords.push(...finalKeywordsFromResults);
+        }
+
+        console.log(`[${new Date().toISOString()}] [INSPIRATION] FINAL_KEYWORDS_EXTRACTED_FROM_RESULTS:`, {
+            extractedKeywords: finalKeywordsFromResults,
+            finalKeywords,
+            source: 'mobbinResults.tags'
+        });
 
         const searchDuration = Date.now() - searchStartTime;
         console.log(`[${new Date().toISOString()}] [INSPIRATION] MOBBIN_SEARCH_COMPLETE:`, {
             resultsFound: mobbinResults.length,
+            finalKeywordsCount: finalKeywords.length,
+            finalKeywords,
             results: mobbinResults.map(r => ({ title: r.title, relevanceScore: r.relevanceScore })),
             duration: `${searchDuration}ms`,
             usingIntelligentScraping: true
@@ -261,10 +290,11 @@ async function searchMobbin(searchIntents: SearchIntent, app: FastifyInstance, d
 
         app.log.info({
             resultCount: mobbinResults.length,
+            finalKeywordsCount: finalKeywords.length,
             searchMethod: 'intelligent_scraping'
         }, 'Intelligent Mobbin search completed');
 
-        return mobbinResults;
+        return { mobbinResults, finalKeywords };
 
     } catch (error) {
         const searchDuration = Date.now() - searchStartTime;
@@ -289,7 +319,7 @@ async function searchMobbin(searchIntents: SearchIntent, app: FastifyInstance, d
             }
         ];
 
-        return mockResults;
+        return { mobbinResults: mockResults, finalKeywords: searchIntents.keywords };
     }
 }
 
@@ -389,6 +419,103 @@ Here are the most relevant examples:`;
 }
 
 export async function registerInspirationRoutes(app: FastifyInstance) {
+    // NEW: Phase 1 - Extract keywords only
+    app.post('/inspiration/extract-keywords', async (req, reply) => {
+        const requestStartTime = Date.now();
+        const requestId = Math.random().toString(36).substring(7);
+
+        console.log(`[${new Date().toISOString()}] [INSPIRATION] EXTRACT_KEYWORDS_REQUEST_START:`, {
+            requestId,
+            method: 'POST',
+            endpoint: '/inspiration/extract-keywords',
+            timestamp: new Date().toISOString()
+        });
+
+        const body = req.body as any;
+        const problemStatement = body?.problemStatement;
+
+        if (!problemStatement || typeof problemStatement !== 'string') {
+            console.log(`[${new Date().toISOString()}] [INSPIRATION] EXTRACT_KEYWORDS_VALIDATION_FAILED:`, {
+                requestId,
+                error: 'Missing or invalid problemStatement',
+                hasBody: !!body,
+                hasProblemStatement: !!problemStatement,
+                problemStatementType: typeof problemStatement
+            });
+            return reply.code(400).send({ error: 'Missing or invalid problemStatement' });
+        }
+
+        console.log(`[${new Date().toISOString()}] [INSPIRATION] EXTRACT_KEYWORDS_VALIDATED:`, {
+            requestId,
+            problemStatement: problemStatement.substring(0, 200) + (problemStatement.length > 200 ? '...' : ''),
+            problemLength: problemStatement.length
+        });
+
+        app.log.info({
+            problemStatement: problemStatement.substring(0, 100) + '...',
+            problemLength: problemStatement.length
+        }, 'Processing keyword extraction request');
+
+        try {
+            // Initialize unified scraping service if not already done
+            if (!unifiedScrapingService) {
+                console.log(`[${new Date().toISOString()}] [INSPIRATION] INITIALIZING_UNIFIED_SCRAPING_SERVICE_FOR_KEYWORDS`);
+                unifiedScrapingService = new UnifiedScrapingService(app);
+            }
+
+            // Extract keywords only (Phase 1)
+            console.log(`[${new Date().toISOString()}] [INSPIRATION] CALLING_EXTRACT_KEYWORDS_ONLY:`, {
+                requestId,
+                problemStatement: problemStatement.substring(0, 100) + '...',
+                serviceInitialized: !!unifiedScrapingService
+            });
+
+            const keywordResult = await unifiedScrapingService.extractKeywordsOnly(problemStatement);
+
+            const totalDuration = Date.now() - requestStartTime;
+            console.log(`[${new Date().toISOString()}] [INSPIRATION] EXTRACT_KEYWORDS_SUCCESS:`, {
+                requestId,
+                keywords: keywordResult.keywords,
+                keywordCount: keywordResult.keywords.length,
+                metadata: keywordResult.metadata,
+                totalDuration: `${totalDuration}ms`,
+                success: true
+            });
+
+            app.log.info({
+                keywordCount: keywordResult.keywords.length,
+                keywords: keywordResult.keywords,
+                generationMethod: keywordResult.metadata.keywordGenerationMethod
+            }, 'Keyword extraction completed successfully');
+
+            return reply.send({
+                keywords: keywordResult.keywords,
+                metadata: keywordResult.metadata
+            });
+
+        } catch (err) {
+            const totalDuration = Date.now() - requestStartTime;
+            console.log(`[${new Date().toISOString()}] [INSPIRATION] EXTRACT_KEYWORDS_FAILED:`, {
+                requestId,
+                error: err.message,
+                errorStack: err.stack,
+                totalDuration: `${totalDuration}ms`,
+                success: false
+            });
+
+            app.log.error({
+                err: err,
+                message: err.message,
+                problemStatement: problemStatement.substring(0, 100)
+            }, 'Keyword extraction failed');
+
+            return reply.code(500).send({
+                error: 'Failed to extract keywords',
+                keywords: []
+            });
+        }
+    });
+
     app.post('/inspiration/mobbin-search', async (req, reply) => {
         const requestStartTime = Date.now();
         const requestId = Math.random().toString(36).substring(7);
@@ -402,6 +529,7 @@ export async function registerInspirationRoutes(app: FastifyInstance) {
 
         const body = req.body as any;
         const problemStatement = body?.problemStatement;
+        const providedKeywords = body?.keywords; // NEW: Optional keywords for Phase 2
         const debugMode = body?.debugMode === true; // Add debug mode support
 
         if (!problemStatement || typeof problemStatement !== 'string') {
@@ -418,45 +546,115 @@ export async function registerInspirationRoutes(app: FastifyInstance) {
         console.log(`[${new Date().toISOString()}] [INSPIRATION] REQUEST_VALIDATED:`, {
             requestId,
             problemStatement: problemStatement.substring(0, 200) + (problemStatement.length > 200 ? '...' : ''),
-            problemLength: problemStatement.length
+            problemLength: problemStatement.length,
+            hasProvidedKeywords: !!providedKeywords,
+            providedKeywordsCount: providedKeywords?.length || 0
         });
 
         app.log.info({
             problemStatement: problemStatement.substring(0, 100) + '...',
-            problemLength: problemStatement.length
+            problemLength: problemStatement.length,
+            hasProvidedKeywords: !!providedKeywords,
+            providedKeywordsCount: providedKeywords?.length || 0
         }, 'Processing Mobbin inspiration search request');
 
         try {
-            // Step 1: Extract search intents
-            console.log(`[${new Date().toISOString()}] [INSPIRATION] STEP_1_START:`, {
-                requestId,
-                step: 'Extract search intents',
-                stepNumber: 1,
-                totalSteps: 3
-            });
-            app.log.info('Extracting search intents...');
-            const searchIntents = await extractSearchIntents(problemStatement, app);
-            console.log(`[${new Date().toISOString()}] [INSPIRATION] STEP_1_COMPLETE:`, {
-                requestId,
-                searchIntents,
-                duration: `${Date.now() - requestStartTime}ms`
-            });
+            // Initialize unified scraping service if not already done
+            if (!unifiedScrapingService) {
+                console.log(`[${new Date().toISOString()}] [INSPIRATION] INITIALIZING_UNIFIED_SCRAPING_SERVICE_FOR_SEARCH`);
+                unifiedScrapingService = new UnifiedScrapingService(app);
+            }
 
-            // Step 2: Search Mobbin
-            console.log(`[${new Date().toISOString()}] [INSPIRATION] STEP_2_START:`, {
-                requestId,
-                step: 'Search Mobbin',
-                stepNumber: 2,
-                totalSteps: 3,
-                debugMode
-            });
-            app.log.info('Searching Mobbin...');
-            const mobbinResults = await searchMobbin(searchIntents, app, debugMode);
-            console.log(`[${new Date().toISOString()}] [INSPIRATION] STEP_2_COMPLETE:`, {
-                requestId,
-                resultsCount: mobbinResults.length,
-                duration: `${Date.now() - requestStartTime}ms`
-            });
+            let mobbinResults: MobbinResult[] = [];
+            let finalKeywords: string[] = [];
+            let searchIntents: SearchIntent;
+
+            // NEW: Two-phase approach - check if keywords are provided
+            if (providedKeywords && Array.isArray(providedKeywords) && providedKeywords.length > 0) {
+                // Phase 2: Use provided keywords for scraping
+                console.log(`[${new Date().toISOString()}] [INSPIRATION] PHASE_2_SCRAPING_WITH_PROVIDED_KEYWORDS:`, {
+                    requestId,
+                    providedKeywords,
+                    keywordCount: providedKeywords.length
+                });
+
+                app.log.info('Using provided keywords for Phase 2 scraping...');
+
+                const scrapingResult = await unifiedScrapingService.scrapeWithKnownKeywords(
+                    providedKeywords,
+                    5, // thumbnailsPerKeyword
+                    problemStatement
+                );
+
+                // Convert UnifiedScrapingResult[] to MobbinResult[] format for backward compatibility
+                const designResults = scrapingResult.results || [];
+                mobbinResults = designResults.map((result, index) => ({
+                    title: `Design Pattern ${index + 1}`,
+                    url: result.url,
+                    appName: "Mobbin App",
+                    category: "Design",
+                    tags: [result.keyword],
+                    whyRelevant: `Relevant design pattern for ${result.keyword}`,
+                    relevanceScore: 0.8
+                }));
+
+                finalKeywords = providedKeywords;
+
+                // Create minimal searchIntents for Phase 2 (for conversational response generation)
+                searchIntents = {
+                    patterns: [],
+                    screens: [],
+                    comparables: [],
+                    keywords: providedKeywords
+                };
+
+                console.log(`[${new Date().toISOString()}] [INSPIRATION] PHASE_2_SCRAPING_COMPLETE:`, {
+                    requestId,
+                    resultsCount: mobbinResults.length,
+                    finalKeywordsCount: finalKeywords.length,
+                    finalKeywords
+                });
+
+            } else {
+                // Phase 1: Original single-phase approach (backward compatibility)
+                console.log(`[${new Date().toISOString()}] [INSPIRATION] SINGLE_PHASE_APPROACH:`, {
+                    requestId,
+                    reason: 'No provided keywords, using original workflow'
+                });
+
+                // Step 1: Extract search intents
+                console.log(`[${new Date().toISOString()}] [INSPIRATION] STEP_1_START:`, {
+                    requestId,
+                    step: 'Extract search intents',
+                    stepNumber: 1,
+                    totalSteps: 3
+                });
+                app.log.info('Extracting search intents...');
+                searchIntents = await extractSearchIntents(problemStatement, app);
+                console.log(`[${new Date().toISOString()}] [INSPIRATION] STEP_1_COMPLETE:`, {
+                    requestId,
+                    searchIntents,
+                    duration: `${Date.now() - requestStartTime}ms`
+                });
+
+                // Step 2: Search Mobbin
+                console.log(`[${new Date().toISOString()}] [INSPIRATION] STEP_2_START:`, {
+                    requestId,
+                    step: 'Search Mobbin',
+                    stepNumber: 2,
+                    totalSteps: 3,
+                    debugMode
+                });
+                app.log.info('Searching Mobbin...');
+                const searchResult = await searchMobbin(searchIntents, problemStatement, app, debugMode);
+                ({ mobbinResults, finalKeywords } = searchResult);
+                console.log(`[${new Date().toISOString()}] [INSPIRATION] STEP_2_COMPLETE:`, {
+                    requestId,
+                    resultsCount: mobbinResults.length,
+                    finalKeywordsCount: finalKeywords.length,
+                    duration: `${Date.now() - requestStartTime}ms`
+                });
+            }
 
             // Step 3: Generate conversational response
             console.log(`[${new Date().toISOString()}] [INSPIRATION] STEP_3_START:`, {
@@ -497,7 +695,8 @@ export async function registerInspirationRoutes(app: FastifyInstance) {
             return reply.send({
                 conversationalResponse,
                 mobbinLinks: mobbinResults,
-                searchIntents
+                searchIntents,
+                finalKeywords
             });
 
         } catch (err) {

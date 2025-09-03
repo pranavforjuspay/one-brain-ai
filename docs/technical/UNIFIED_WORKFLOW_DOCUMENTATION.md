@@ -12,7 +12,7 @@ User Query → Route Decision → Different Workflows
 ├── /apps/search → Complex app-specific scraping
 ├── /flows/search → Complex flow-specific scraping  
 ├── /screens/search → Complex screen-specific scraping
-└── /comprehensive/search → Progressive multi-path scraping
+└── /comprehensive/search → Progressive multi-path scraping (currently everything is going via this)
 ```
 
 ### After (Unified System)

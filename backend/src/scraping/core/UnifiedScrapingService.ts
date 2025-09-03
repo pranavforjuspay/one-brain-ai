@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PlaywrightMCPClient } from './PlaywrightMCPClient.js';
 import { MobbinAuthService } from '../auth/MobbinAuthService.js';
-import { LLMKeywordService, LLMKeywordResponse } from '../ai/LLMKeywordService.js';
+import { LLMKeywordServiceV2, LLMKeywordResponse } from '../ai/LLMKeywordServiceV2.js';
 import { LLMResultExplanationService, ResultExplanation } from '../ai/LLMResultExplanationService.js';
 
 export interface UnifiedScrapingResult {
@@ -21,7 +21,7 @@ export interface UnifiedScrapingResponse {
         executedWorkflow: string;
         authenticationUsed: boolean;
         thumbnailsPerKeyword: number;
-        keywordGenerationMethod: 'llm' | 'fallback';
+        keywordGenerationMethod: 'llm' | 'fallback' | 'provided';
         llmConfidenceScores?: number[];
         originalQuery?: string;
     };
@@ -45,14 +45,14 @@ export class UnifiedScrapingService {
     private mcpClient: PlaywrightMCPClient;
     private authService: MobbinAuthService;
     private app: FastifyInstance;
-    private llmKeywordService: LLMKeywordService;
+    private llmKeywordService: LLMKeywordServiceV2;
     private llmExplanationService: LLMResultExplanationService;
 
     constructor(app: FastifyInstance) {
         this.app = app;
         this.mcpClient = new PlaywrightMCPClient(app);
         this.authService = new MobbinAuthService(this.mcpClient);
-        this.llmKeywordService = new LLMKeywordService(app);
+        this.llmKeywordService = new LLMKeywordServiceV2(app);
         this.llmExplanationService = new LLMResultExplanationService(app);
     }
 
@@ -423,6 +423,80 @@ export class UnifiedScrapingService {
         });
 
         return results;
+    }
+
+    /**
+     * NEW: Extract keywords only (Phase 1 of two-phase approach)
+     */
+    async extractKeywordsOnly(userQuery: string): Promise<{ keywords: string[]; metadata: any }> {
+        console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] KEYWORDS_ONLY_EXTRACTION_START:`, {
+            userQuery: userQuery.substring(0, 100) + '...',
+            queryLength: userQuery.length
+        });
+
+        try {
+            // Extract keywords using LLM
+            const keywordExtraction = await this.extractKeywordsWithLLM(userQuery);
+            const keywordStrings = keywordExtraction.keywords.map(k => k.term);
+            const llmConfidenceScores = keywordExtraction.keywords.map(k => k.confidence);
+
+            console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] KEYWORDS_ONLY_EXTRACTION_COMPLETE:`, {
+                keywords: keywordStrings,
+                keywordCount: keywordStrings.length,
+                generationMethod: keywordExtraction.generationMethod,
+                llmConfidenceScores
+            });
+
+            return {
+                keywords: keywordStrings,
+                metadata: {
+                    keywordGenerationMethod: keywordExtraction.generationMethod,
+                    llmConfidenceScores,
+                    originalQuery: userQuery,
+                    processingTime: keywordExtraction.processingTime
+                }
+            };
+        } catch (error) {
+            console.error(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] KEYWORDS_ONLY_EXTRACTION_FAILED:`, error.message);
+            throw new Error(`Keyword extraction failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * NEW: Scrape with known keywords (Phase 2 of two-phase approach)
+     */
+    async scrapeWithKnownKeywords(
+        keywords: string[],
+        thumbnailsPerKeyword: number = 5,
+        originalQuery?: string
+    ): Promise<UnifiedScrapingResponse> {
+        console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] SCRAPE_WITH_KNOWN_KEYWORDS_START:`, {
+            keywords,
+            keywordCount: keywords.length,
+            thumbnailsPerKeyword,
+            hasOriginalQuery: !!originalQuery
+        });
+
+        // Decide route based on keywords (for metadata only)
+        const routeDecision = UnifiedScrapingService.decideRoute(keywords);
+
+        console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] ROUTE_DECISION:`, {
+            keywords,
+            routeDecision
+        });
+
+        // Execute unified scraping workflow with known keywords
+        const scrapingResult = await this.scrapeAllKeywords(keywords, routeDecision, thumbnailsPerKeyword);
+
+        // Enhance response with metadata
+        return {
+            ...scrapingResult,
+            metadata: {
+                ...scrapingResult.metadata,
+                keywordGenerationMethod: 'provided' as const,
+                originalQuery
+            }
+        };
     }
 
     /**
