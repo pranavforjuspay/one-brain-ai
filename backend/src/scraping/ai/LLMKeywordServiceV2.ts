@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { promptManager } from '../../prompts/PromptManager.js';
 
 const execAsync = promisify(exec);
 
@@ -12,6 +13,23 @@ export interface LLMKeywordResult {
     term: string;
     confidence: number;
     reasoning?: string;
+    type?: 'app' | 'feature' | 'pattern' | 'industry';
+    thumbnailAllocation?: number;
+    isCompetitor?: boolean;
+    parentApp?: string;
+}
+
+export interface EnhancedKeywordStrategy {
+    totalKeywords: number;
+    totalThumbnailBudget: number;
+    keywordBreakdown: {
+        apps: number;
+        features: number;
+        patterns: number;
+        industry: number;
+        competitors: number;
+    };
+    allocationStrategy: string;
 }
 
 export interface LLMKeywordResponse {
@@ -19,6 +37,8 @@ export interface LLMKeywordResponse {
     originalQuery: string;
     generationMethod: 'llm' | 'fallback';
     processingTime: number;
+    enhancedStrategy?: EnhancedKeywordStrategy;
+    totalThumbnailBudget?: number;
 }
 
 /**
@@ -51,17 +71,25 @@ export class LLMKeywordServiceV2 {
 
             const processingTime = Date.now() - startTime;
 
+            // Calculate enhanced strategy metadata
+            const enhancedStrategy = this.calculateEnhancedStrategy(llmResult);
+            const totalThumbnailBudget = llmResult.reduce((sum, k) => sum + (k.thumbnailAllocation || 0), 0);
+
             console.log(`[${new Date().toISOString()}] [LLM_KEYWORDS_V2] GENERATION_SUCCESS:`, {
                 keywordsCount: llmResult.length,
                 processingTime,
-                keywords: llmResult.map(k => k.term)
+                keywords: llmResult.map(k => k.term),
+                totalThumbnailBudget,
+                enhancedStrategy
             });
 
             return {
                 keywords: llmResult,
                 originalQuery: userQuery,
                 generationMethod: 'llm',
-                processingTime
+                processingTime,
+                enhancedStrategy,
+                totalThumbnailBudget
             };
 
         } catch (error) {
@@ -74,82 +102,94 @@ export class LLMKeywordServiceV2 {
             const fallbackKeywords = this.generateEnhancedFallbackKeywords(userQuery);
             const processingTime = Date.now() - startTime;
 
+            // Add basic allocation for fallback keywords
+            const enhancedFallbackKeywords = fallbackKeywords.map(keyword => ({
+                ...keyword,
+                type: 'feature' as const,
+                thumbnailAllocation: this.validateThumbnailAllocation(undefined, keyword.confidence),
+                isCompetitor: false
+            }));
+
+            const enhancedStrategy = this.calculateEnhancedStrategy(enhancedFallbackKeywords);
+            const totalThumbnailBudget = enhancedFallbackKeywords.reduce((sum, k) => sum + (k.thumbnailAllocation || 0), 0);
+
             console.log(`[${new Date().toISOString()}] [LLM_KEYWORDS_V2] FALLBACK_USED:`, {
-                keywordsCount: fallbackKeywords.length,
+                keywordsCount: enhancedFallbackKeywords.length,
                 processingTime,
-                keywords: fallbackKeywords.map(k => k.term)
+                keywords: enhancedFallbackKeywords.map(k => k.term),
+                totalThumbnailBudget,
+                enhancedStrategy
             });
 
             return {
-                keywords: fallbackKeywords,
+                keywords: enhancedFallbackKeywords,
                 originalQuery: userQuery,
                 generationMethod: 'fallback',
-                processingTime
+                processingTime,
+                enhancedStrategy,
+                totalThumbnailBudget
             };
         }
+    }
+
+    /**
+     * Calculate enhanced strategy metadata
+     */
+    private calculateEnhancedStrategy(keywords: LLMKeywordResult[]): EnhancedKeywordStrategy {
+        const breakdown = {
+            apps: 0,
+            features: 0,
+            patterns: 0,
+            industry: 0,
+            competitors: 0
+        };
+
+        let totalThumbnailBudget = 0;
+
+        keywords.forEach(keyword => {
+            if (keyword.type) {
+                if (keyword.type === 'app') {
+                    breakdown.apps++;
+                } else if (keyword.type === 'feature') {
+                    breakdown.features++;
+                } else if (keyword.type === 'pattern') {
+                    breakdown.patterns++;
+                } else if (keyword.type === 'industry') {
+                    breakdown.industry++;
+                }
+            }
+
+            if (keyword.isCompetitor) {
+                breakdown.competitors++;
+            }
+
+            totalThumbnailBudget += keyword.thumbnailAllocation || 0;
+        });
+
+        // Determine allocation strategy description
+        let allocationStrategy = 'Balanced allocation';
+        if (breakdown.apps > 0 && breakdown.competitors > 0) {
+            allocationStrategy = 'App-focused with competitive intelligence';
+        } else if (breakdown.features > breakdown.apps) {
+            allocationStrategy = 'Feature-driven research approach';
+        } else if (breakdown.apps > 0) {
+            allocationStrategy = 'App-centric design exploration';
+        }
+
+        return {
+            totalKeywords: keywords.length,
+            totalThumbnailBudget,
+            keywordBreakdown: breakdown,
+            allocationStrategy
+        };
     }
 
     /**
      * Call Claude via Vertex AI for keyword generation using V2 prompt
      */
     private async callClaudeForKeywordsV2(userQuery: string): Promise<LLMKeywordResult[]> {
-        const systemPrompt = `SYSTEM: You are a design search expert who generates HIGH-SIGNAL, SINGLE-WORD keywords to find UI/UX inspiration on Mobbin.
-
-GOAL
-Return 3–5 single words (ranked) that a designer would actually type into Mobbin to retrieve relevant screens. Focus on the PRIMARY user intent and actions.
-
-STRICT OUTPUT
-Return ONLY this JSON (no prose, no extra keys):
-{
-  "keywords": [
-    {"term": "<singleword>", "confidence": <0.50-1.00>},
-    ...
-  ]
-}
-Rules:
-- 3 to 5 items total.
-- "term" must be a single token: lowercase, no spaces, no hyphens, no emojis.
-- "confidence" is your estimate of usefulness for Mobbin search (0.50–1.00).
-
-SELECTION PRINCIPLES (in priority order)
-1) PRIMARY INTENT: Focus on the main user action/goal described in the query
-   - What is the user trying to DO? (e.g., redeem, browse, checkout, onboard)
-   - What is the core FUNCTION? (e.g., offers, payments, messaging, trading)
-
-2) FUNCTIONAL KEYWORDS: Prefer action and domain words over brands
-   - Actions: redeem, browse, checkout, login, signup, search, filter, etc.
-   - Domains: offers, rewards, banking, travel, food, crypto, etc.
-   - UI patterns: onboarding, dashboard, profile, settings, etc.
-
-3) RELEVANT COMPARABLES: Only include 1-2 well-known apps if they solve the SAME core problem
-   - Must be directly relevant to the primary intent
-   - Canonicalize names: remove spaces/punctuation, lowercase
-   - Example: For "offers app" → include apps known for offers/deals, not just any fintech app
-
-4) AVOID BIAS: Don't include apps just because they're in the same industry
-   - "Visa card offers" ≠ include all card companies
-   - Focus on the offers functionality, not the card aspect
-
-GUARDRAILS
-- NEVER output multi-word phrases
-- Prioritize functional keywords over brand keywords
-- Include brands only if they're famous for solving the same core problem
-- Avoid generic UI terms unless they're central to the request
-- Focus on what users would actually search for on Mobbin
-
-SCORING APPROACH
-Rank keywords by:
-1. How well they match the primary user intent (highest weight)
-2. How likely they are to yield good results on Mobbin
-3. How relevant any comparable apps are to the core problem
-
-INPUT
-You will receive a problem statement as USER content.
-
-OUTPUT
-Return the STRICT JSON only.`;
-
-        const userMessage = `${userQuery}`;
+        const systemPrompt = promptManager.getSystemPrompt('keyword-extraction-v2');
+        const userMessage = promptManager.getUserPrompt('keyword-extraction-v2', { userQuery });
 
         const result = await this.callAnthropicAPI(systemPrompt, userMessage);
 
@@ -171,15 +211,36 @@ Return the STRICT JSON only.`;
                 throw new Error('Invalid response format from Claude V2');
             }
 
-            // Parse JSON response
-            const parsed = JSON.parse(responseText);
+            // Parse JSON response - handle markdown code blocks with improved parsing
+            let jsonText = responseText;
+
+            // Strategy 1: Try to extract from markdown code blocks
+            const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (codeBlockMatch) {
+                jsonText = codeBlockMatch[1].trim();
+                console.log(`[${new Date().toISOString()}] [LLM_KEYWORDS_V2] EXTRACTED_FROM_CODE_BLOCK`);
+            } else {
+                // Strategy 2: Find JSON object pattern directly (fallback for truncated responses)
+                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    jsonText = jsonMatch[0].trim();
+                    console.log(`[${new Date().toISOString()}] [LLM_KEYWORDS_V2] EXTRACTED_FROM_JSON_PATTERN`);
+                } else {
+                    // Strategy 3: Remove all markdown formatting and try to find JSON
+                    jsonText = responseText.replace(/```[^`]*```/g, '').replace(/```/g, '').trim();
+                    console.log(`[${new Date().toISOString()}] [LLM_KEYWORDS_V2] CLEANED_MARKDOWN_FORMATTING`);
+                }
+            }
+
+            const parsed = JSON.parse(jsonText);
 
             if (!parsed.keywords || !Array.isArray(parsed.keywords)) {
                 throw new Error('Invalid keywords format in V2 response');
             }
 
-            // Enhanced validation for V2
+            // Enhanced validation for V2 with new fields
             const validKeywords: LLMKeywordResult[] = [];
+            let totalAllocation = 0;
 
             for (const keyword of parsed.keywords) {
                 if (keyword.term && typeof keyword.term === 'string' && keyword.confidence) {
@@ -195,32 +256,66 @@ Return the STRICT JSON only.`;
                         !cleanTerm.includes('-') &&
                         /^[a-z0-9]+$/.test(cleanTerm)) { // Only lowercase letters and numbers
 
+                        // Validate and normalize enhanced fields
+                        const confidence = Math.min(Math.max(keyword.confidence, 0.5), 1.0);
+                        const type = this.validateKeywordType(keyword.type);
+                        const thumbnailAllocation = this.validateThumbnailAllocation(keyword.thumbnailAllocation, confidence);
+                        const isCompetitor = Boolean(keyword.isCompetitor);
+                        const parentApp = keyword.parentApp ? String(keyword.parentApp).toLowerCase() : undefined;
+
+                        totalAllocation += thumbnailAllocation;
+
                         validKeywords.push({
                             term: cleanTerm,
-                            confidence: Math.min(Math.max(keyword.confidence, 0.5), 1.0), // V2: min 0.5 confidence
-                            reasoning: keyword.reasoning || 'V2 extraction'
+                            confidence,
+                            reasoning: keyword.reasoning || 'Enhanced V2 extraction',
+                            type,
+                            thumbnailAllocation,
+                            isCompetitor,
+                            parentApp
                         });
                     }
                 }
             }
 
-            // V2 requirement: 3-5 keywords
+            // Enhanced V2 requirements: 2-10 keywords
             if (validKeywords.length === 0) {
                 throw new Error('No valid keywords extracted from LLM V2 response');
             }
 
-            // Sort by confidence and ensure 3-5 keywords
-            const sortedKeywords = validKeywords
-                .sort((a, b) => b.confidence - a.confidence)
-                .slice(0, 5);
-
-            // Ensure minimum 3 keywords for V2
-            if (sortedKeywords.length < 3) {
-                console.warn(`[${new Date().toISOString()}] [LLM_KEYWORDS_V2] INSUFFICIENT_KEYWORDS:`, {
-                    extracted: sortedKeywords.length,
-                    required: 3
+            // Ensure total allocation is within budget (50-100 thumbnails)
+            if (totalAllocation > 100) {
+                console.warn(`[${new Date().toISOString()}] [LLM_KEYWORDS_V2] ALLOCATION_OVER_BUDGET:`, {
+                    totalAllocation,
+                    budget: 100,
+                    adjusting: true
+                });
+                // Scale down allocations proportionally
+                const scaleFactor = 100 / totalAllocation;
+                validKeywords.forEach(keyword => {
+                    keyword.thumbnailAllocation = Math.max(3, Math.round(keyword.thumbnailAllocation! * scaleFactor));
                 });
             }
+
+            // Sort by confidence and ensure 2-10 keywords
+            const sortedKeywords = validKeywords
+                .sort((a, b) => b.confidence - a.confidence)
+                .slice(0, 10);
+
+            // Ensure minimum 2 keywords for enhanced V2
+            if (sortedKeywords.length < 2) {
+                console.warn(`[${new Date().toISOString()}] [LLM_KEYWORDS_V2] INSUFFICIENT_KEYWORDS:`, {
+                    extracted: sortedKeywords.length,
+                    required: 2
+                });
+            }
+
+            console.log(`[${new Date().toISOString()}] [LLM_KEYWORDS_V2] ENHANCED_PARSING_SUCCESS:`, {
+                keywordCount: sortedKeywords.length,
+                totalAllocation: sortedKeywords.reduce((sum, k) => sum + (k.thumbnailAllocation || 0), 0),
+                typeBreakdown: this.getTypeBreakdown(sortedKeywords),
+                competitorCount: sortedKeywords.filter(k => k.isCompetitor).length
+            });
 
             return sortedKeywords;
 
@@ -231,6 +326,45 @@ Return the STRICT JSON only.`;
             });
             throw new Error(`Failed to parse LLM V2 response: ${error.message}`);
         }
+    }
+
+    /**
+     * Validate and normalize keyword type
+     */
+    private validateKeywordType(type: any): 'app' | 'feature' | 'pattern' | 'industry' {
+        const validTypes = ['app', 'feature', 'pattern', 'industry'];
+        if (typeof type === 'string' && validTypes.includes(type.toLowerCase())) {
+            return type.toLowerCase() as 'app' | 'feature' | 'pattern' | 'industry';
+        }
+        return 'feature'; // Default to feature if invalid
+    }
+
+    /**
+     * Validate and normalize thumbnail allocation
+     */
+    private validateThumbnailAllocation(allocation: any, confidence: number): number {
+        // If allocation is provided and valid, use it
+        if (typeof allocation === 'number' && allocation >= 3 && allocation <= 15) {
+            return Math.round(allocation);
+        }
+
+        // Otherwise, calculate based on confidence
+        if (confidence >= 0.8) return 12; // High confidence
+        if (confidence >= 0.6) return 8;  // Medium confidence
+        return 5; // Low confidence
+    }
+
+    /**
+     * Get type breakdown for logging
+     */
+    private getTypeBreakdown(keywords: LLMKeywordResult[]): Record<string, number> {
+        const breakdown = { app: 0, feature: 0, pattern: 0, industry: 0 };
+        keywords.forEach(keyword => {
+            if (keyword.type) {
+                breakdown[keyword.type]++;
+            }
+        });
+        return breakdown;
     }
 
     /**
@@ -368,7 +502,7 @@ Return the STRICT JSON only.`;
         const requestBody = {
             anthropic_version: "vertex-2023-10-16",
             stream: false,
-            max_tokens: 300,  // Reduced for V2 (more focused output)
+            max_tokens: 800,  // Increased for V2 to allow complete JSON responses (was 300)
             temperature: 0.1, // Lower temperature for V2 consistency
             top_p: 1.0,
             system: systemPrompt,

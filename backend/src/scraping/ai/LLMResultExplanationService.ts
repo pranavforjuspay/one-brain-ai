@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { UnifiedScrapingResult } from '../core/UnifiedScrapingService.js';
+import { promptManager } from '../../prompts/PromptManager.js';
 
 const execAsync = promisify(exec);
 
@@ -101,63 +102,17 @@ export class LLMResultExplanationService {
         keywords: string[],
         confidenceScores?: number[]
     ): Promise<Omit<ResultExplanation, 'processingTime'>> {
-        const systemPrompt = `You are a UX design research assistant. Your task is to analyze design inspiration search results and provide user-friendly explanations that help designers understand the value and relevance of the findings.
-
-CRITICAL REQUIREMENTS:
-1. Write in a helpful, professional tone as if speaking directly to a designer
-2. Focus on actionable insights and design patterns
-3. Explain WHY results are relevant to the user's specific query
-4. Categorize results by design patterns, not just keywords
-5. Provide specific recommendations for how to use the insights
-6. Keep explanations concise but valuable
-
-Return response in this exact JSON format:
-{
-  "summary": "Brief overview of what was found (1-2 sentences)",
-  "whyThese": "Explanation of why these specific results match the query",
-  "keyInsights": ["Insight 1", "Insight 2", "Insight 3"],
-  "recommendation": "Specific advice on which results to prioritize and why",
-  "categories": [
-    {
-      "category": "Category Name",
-      "description": "What this category contains",
-      "results": [
-        {
-          "title": "App Name - Feature Description",
-          "description": "What makes this example valuable",
-          "relevanceScore": "High/Medium/Low",
-          "whyRelevant": "Specific reason this matches the query",
-          "keyFeatures": ["Feature 1", "Feature 2", "Feature 3"]
-        }
-      ]
-    }
-  ]
-}`;
-
-        const userMessage = `Analyze these design inspiration search results and provide a user-friendly explanation.
-
-USER QUERY: "${userQuery}"
-
-EXTRACTED KEYWORDS: ${keywords.join(', ')}
-${confidenceScores ? `KEYWORD CONFIDENCE: ${confidenceScores.map(s => s.toFixed(2)).join(', ')}` : ''}
-
-SEARCH RESULTS:
-${results.map((result, index) => `
+        const systemPrompt = promptManager.getSystemPrompt('result-explanation');
+        const userMessage = promptManager.getUserPrompt('result-explanation', {
+            userQuery,
+            results: results.map((result, index) => `
 ${index + 1}. Keyword: ${result.keyword}
    URL: ${result.url}
    Found at: ${result.extractedAt}
-`).join('')}
-
-TOTAL RESULTS: ${results.length}
-
-Please provide a comprehensive explanation that helps the user understand:
-1. What was found and why it's valuable
-2. How these results relate to their specific query
-3. Key design patterns or insights they should notice
-4. Which results to prioritize and why
-5. Actionable recommendations for using these insights
-
-Focus on design patterns, user experience insights, and practical value rather than technical details.`;
+`).join(''),
+            keywords: keywords.join(', '),
+            confidenceScores: confidenceScores ? confidenceScores.map(s => s.toFixed(2)).join(', ') : 'N/A'
+        });
 
         const result = await this.callAnthropicAPI(systemPrompt, userMessage);
         return this.parseExplanationResponse(result, results, keywords, confidenceScores);

@@ -15,14 +15,12 @@ For comprehensive documentation, please visit the [`docs/`](./docs/) folder:
 
 - **[📖 Main Documentation Hub](./docs/README.md)** - Complete overview and navigation
 - **[🏗️ System Architecture Guide](./docs/SYSTEM_ARCHITECTURE_GUIDE.md)** - Layman-friendly explanation of how everything works
-- **[🎨 Mobbin Inspiration Feature](./docs/MOBBIN_INSPIRATION_FEATURE_OVERVIEW.md)** - AI-powered design inspiration discovery
+- **[🚀 Setup Guide](./docs/guides/SETUP_GUIDE.md)** - Complete setup instructions
+- **[📋 API Reference](./docs/guides/API_REFERENCE.md)** - Complete API documentation
 
-### Technical Documentation
-- **[🔧 Mobbin Scraping Architecture](./docs/technical/MOBBIN_SCRAPING_ARCHITECTURE.md)**
-- **[🤖 LLM Keyword Extraction](./docs/technical/LLM_KEYWORD_EXTRACTION_DOCUMENTATION.md)**
-- **[🔄 Unified Workflow](./docs/technical/UNIFIED_WORKFLOW_DOCUMENTATION.md)**
-- **[📊 Click Strategy Analysis](./docs/technical/CLICK_STRATEGY_ANALYSIS.md)**
-- **[🗺️ Mobbin Path Knowledge](./docs/technical/mobbin-path-knowledge.md)**
+### Quick Links
+- **[🎨 Mobbin Inspiration Feature](./docs/MOBBIN_INSPIRATION_FEATURE_OVERVIEW.md)** - AI-powered design inspiration discovery
+- **[� Technical Documentation](./docs/technical/)** - Implementation details and architecture
 
 ## 📁 Project Structure
 

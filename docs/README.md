@@ -9,26 +9,27 @@ Welcome to the comprehensive documentation for the One Brain AI system - an inte
 - [MOBBIN Inspiration Feature Overview](MOBBIN_INSPIRATION_FEATURE_OVERVIEW.md) - Technical deep-dive into the main feature
 
 ### 📖 User Guides
-- [Figma Plugin Setup](guides/FIGMA_PLUGIN_SETUP.md) - How to install and use the Figma plugin
-- [Backend Setup](guides/BACKEND_SETUP.md) - Setting up the backend server
-- [Troubleshooting](guides/TROUBLESHOOTING.md) - Common issues and solutions
+- [Setup Guide](guides/SETUP_GUIDE.md) - Complete setup instructions for the entire system
+- [API Reference](guides/API_REFERENCE.md) - Complete API documentation and examples
+- [Troubleshooting](guides/TROUBLESHOOTING.md) - Common issues and solutions *(Coming Soon)*
 
 ### 🔧 Technical Documentation
 - [Mobbin Scraping Architecture](technical/MOBBIN_SCRAPING_ARCHITECTURE.md) - Web scraping system design
 - [LLM Keyword Extraction](technical/LLM_KEYWORD_EXTRACTION_DOCUMENTATION.md) - AI-powered keyword generation
 - [Unified Workflow](technical/UNIFIED_WORKFLOW_DOCUMENTATION.md) - Core scraping workflow
+- [V2 Keyword to Mobbin Workflow](technical/V2_KEYWORD_TO_MOBBIN_WORKFLOW.md) - Enhanced keyword extraction workflow
 - [Click Strategy Analysis](technical/CLICK_STRATEGY_ANALYSIS.md) - Thumbnail clicking strategies
 - [Mobbin Path Knowledge](technical/mobbin-path-knowledge.md) - Domain-specific navigation patterns
 
 ### 🎯 API Reference
-- [API Endpoints](API_REFERENCE.md) - Complete API documentation
-- [Data Structures](API_REFERENCE.md#data-structures) - Request/response formats
-- [Error Handling](API_REFERENCE.md#error-handling) - Error codes and recovery
+- [API Endpoints](guides/API_REFERENCE.md) - Complete API documentation
+- [Data Structures](guides/API_REFERENCE.md#response-format) - Request/response formats
+- [Error Handling](guides/API_REFERENCE.md#error-codes) - Error codes and recovery
 
 ### 🚀 Deployment
-- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Production deployment instructions
-- [Environment Configuration](DEPLOYMENT_GUIDE.md#environment-setup) - Required environment variables
-- [Monitoring & Logging](DEPLOYMENT_GUIDE.md#monitoring) - System monitoring setup
+- [Setup Guide](guides/SETUP_GUIDE.md) - Complete setup and deployment instructions
+- [Environment Configuration](guides/SETUP_GUIDE.md#environment-configuration) - Required environment variables
+- [Production Deployment](guides/SETUP_GUIDE.md#production-deployment) - Production deployment setup
 
 ## 🏗️ System Overview
 
@@ -76,9 +77,10 @@ When adding new features or making changes:
 ## 📞 Support
 
 For questions or issues:
-- Check the [Troubleshooting Guide](guides/TROUBLESHOOTING.md)
+- Check the [Setup Guide](guides/SETUP_GUIDE.md) for installation and configuration
 - Review the [System Architecture Guide](SYSTEM_ARCHITECTURE_GUIDE.md) for understanding
 - Examine the [Technical Documentation](technical/) for implementation details
+- Use the [API Reference](guides/API_REFERENCE.md) for integration help
 
 ---
 

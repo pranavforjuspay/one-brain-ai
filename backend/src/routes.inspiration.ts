@@ -244,7 +244,11 @@ async function searchMobbin(searchIntents: SearchIntent, problemStatement: strin
         });
 
         // Extract the final keywords that will be used for Mobbin search
-        const finalKeywords = result.keywords || [];
+        const rawKeywords = result.keywords || [];
+        const finalKeywords: string[] = Array.isArray(rawKeywords) && rawKeywords.length > 0 && typeof rawKeywords[0] === 'object'
+            ? (rawKeywords as any[]).map((k: any) => k.term)
+            : rawKeywords as string[];
+
         console.log(`[${new Date().toISOString()}] [INSPIRATION] FINAL_KEYWORDS_EXTRACTED:`, {
             finalKeywords,
             keywordCount: finalKeywords.length

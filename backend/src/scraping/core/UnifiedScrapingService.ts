@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PlaywrightMCPClient } from './PlaywrightMCPClient.js';
 import { MobbinAuthService } from '../auth/MobbinAuthService.js';
-import { LLMKeywordServiceV2, LLMKeywordResponse } from '../ai/LLMKeywordServiceV2.js';
+import { LLMKeywordServiceV2, LLMKeywordResponse, LLMKeywordResult } from '../ai/LLMKeywordServiceV2.js';
 import { LLMResultExplanationService, ResultExplanation } from '../ai/LLMResultExplanationService.js';
 
 export interface UnifiedScrapingResult {
@@ -12,7 +12,7 @@ export interface UnifiedScrapingResult {
 }
 
 export interface UnifiedScrapingResponse {
-    keywords: string[];
+    keywords: string[] | LLMKeywordResult[];
     routeDecision: string;
     results: UnifiedScrapingResult[];
     totalResults: number;
@@ -57,10 +57,10 @@ export class UnifiedScrapingService {
     }
 
     /**
-     * Execute unified scraping workflow for all keywords
+     * Execute unified scraping workflow for all keywords with dynamic allocation
      */
     async scrapeAllKeywords(
-        keywords: string[],
+        keywords: string[] | LLMKeywordResult[],
         routeDecision: string = 'unified',
         thumbnailsPerKeyword: number = 5
     ): Promise<UnifiedScrapingResponse> {
@@ -164,11 +164,22 @@ export class UnifiedScrapingService {
 
     /**
      * Process a single keyword with the unified workflow
+     * Now supports both string keywords and LLMKeywordResult objects with dynamic allocation
      */
-    private async processKeyword(keyword: string, thumbnailsPerKeyword: number): Promise<UnifiedScrapingResult[]> {
+    private async processKeyword(keyword: string | LLMKeywordResult, thumbnailsPerKeyword: number): Promise<UnifiedScrapingResult[]> {
         const results: UnifiedScrapingResult[] = [];
 
-        console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] PROCESS_KEYWORD_START:`, { keyword });
+        // Extract keyword string and determine thumbnail allocation
+        const keywordString = typeof keyword === 'string' ? keyword : keyword.term;
+        const actualThumbnailCount = typeof keyword === 'string' ? thumbnailsPerKeyword : (keyword.thumbnailAllocation || thumbnailsPerKeyword);
+
+        console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] PROCESS_KEYWORD_START:`, {
+            keyword: keywordString,
+            type: typeof keyword === 'string' ? 'string' : 'LLMKeywordResult',
+            thumbnailAllocation: actualThumbnailCount,
+            confidence: typeof keyword === 'string' ? 'N/A' : keyword.confidence,
+            keywordType: typeof keyword === 'string' ? 'N/A' : keyword.type
+        });
 
         // Step 1: Click "Search on iOS..." to open the search modal (inspired by multi-strategy test)
         console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] OPENING_SEARCH_MODAL`);
@@ -180,8 +191,8 @@ export class UnifiedScrapingService {
         await this.mcpClient.waitFor('input[type="text"]', { timeout: 5000 });
 
         // Step 3: Type keyword in modal search input
-        console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] TYPING_KEYWORD:`, { keyword });
-        await this.mcpClient.fill('input[type="text"]', keyword);
+        console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] TYPING_KEYWORD:`, { keyword: keywordString });
+        await this.mcpClient.fill('input[type="text"]', keywordString);
 
         // Step 4: Wait a moment for the input to be processed
         console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] WAITING_AFTER_TYPING`);
@@ -215,13 +226,15 @@ export class UnifiedScrapingService {
         console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] CURRENT_URL_AFTER_SEARCH:`, { url: currentUrl });
 
         // Step 8: Find and click thumbnails using robust strategy
-        console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] PROCESSING_THUMBNAILS:`, { thumbnailsPerKeyword });
+        console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] PROCESSING_THUMBNAILS:`, {
+            thumbnailsPerKeyword: actualThumbnailCount
+        });
 
-        const thumbnailResults = await this.clickThumbnailsAndCaptureURLs(keyword, thumbnailsPerKeyword);
+        const thumbnailResults = await this.clickThumbnailsAndCaptureURLs(keywordString, actualThumbnailCount);
         results.push(...thumbnailResults);
 
         console.log(`[${new Date().toISOString()}] [UNIFIED_SCRAPING] PROCESS_KEYWORD_COMPLETE:`, {
-            keyword,
+            keyword: keywordString,
             resultsCount: results.length
         });
 
@@ -556,10 +569,15 @@ export class UnifiedScrapingService {
             const keywords = scrapingResult.keywords;
             const confidenceScores = scrapingResult.metadata.llmConfidenceScores;
 
+            // Convert keywords to string array for explanation service
+            const keywordStrings = Array.isArray(keywords) && keywords.length > 0 && typeof keywords[0] === 'object'
+                ? (keywords as LLMKeywordResult[]).map(k => k.term)
+                : keywords as string[];
+
             const explanation = await this.llmExplanationService.explainResults(
                 userQuery,
                 scrapingResult.results,
-                keywords,
+                keywordStrings,
                 confidenceScores
             );
 

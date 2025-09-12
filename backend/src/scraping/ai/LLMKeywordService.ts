@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { promptManager } from '../../prompts/PromptManager.js';
 
 const execAsync = promisify(exec);
 
@@ -92,29 +93,8 @@ export class LLMKeywordService {
      * Call Claude via Vertex AI for keyword generation
      */
     private async callClaudeForKeywords(userQuery: string): Promise<LLMKeywordResult[]> {
-        const systemPrompt = `You are a design search expert specializing in mobile and web UI/UX patterns. Your task is to generate effective search keywords for finding design inspiration on Mobbin (a design inspiration platform).
-
-CRITICAL REQUIREMENTS:
-1. Return ONLY single words, never phrases or multi-word terms
-2. Generate exactly 3-5 keywords maximum
-3. Rank by relevance/effectiveness for design search
-4. Focus on UI/UX terminology that designers would search for
-5. Consider mobile app design patterns, web interfaces, and user flows
-
-Return response in this exact JSON format:
-{
-  "keywords": [
-    {"term": "banking", "confidence": 0.95},
-    {"term": "onboarding", "confidence": 0.90},
-    {"term": "fintech", "confidence": 0.85}
-  ]
-}`;
-
-        const userMessage = `Generate search keywords for this design inspiration request:
-
-Query: "${userQuery}"
-
-Return 3-5 single keywords (no phrases) that would be most effective for finding relevant design examples on Mobbin. Focus on UI patterns, design categories, and user experience elements.`;
+        const systemPrompt = promptManager.getSystemPrompt('keyword-extraction-v1');
+        const userMessage = promptManager.getUserPrompt('keyword-extraction-v1', { userQuery });
 
         const result = await this.callAnthropicAPI(systemPrompt, userMessage);
 
