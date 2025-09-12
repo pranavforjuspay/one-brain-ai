@@ -696,6 +696,99 @@
             text-decoration: underline;
         }
 
+        /* Keywords Display Styles */
+        .keywords-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            font-size: 12px;
+        }
+
+        .keywords-display h3 {
+            margin: 0 0 12px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .keywords-content {
+            line-height: 1.5;
+        }
+
+        .keywords-section {
+            margin-bottom: 12px;
+        }
+
+        .keywords-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .keywords-section-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 4px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .keywords-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .keyword-tag {
+            display: inline-flex;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            color: #495057;
+            gap: 4px;
+        }
+
+        .keyword-confidence {
+            background: #e9ecef;
+            border-radius: 2px;
+            padding: 1px 4px;
+            font-size: 9px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .keyword-confidence.high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .keyword-confidence.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .keyword-confidence.low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .keywords-meta {
+            font-size: 10px;
+            color: #6c757d;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e9ecef;
+        }
+
         /* Inspiration button styles */
         #inspiration-btn {
             background: #28a745;
@@ -827,6 +920,14 @@
                 <div id="inspiration-results-info">Found on Mobbin</div>
             </div>
 
+            <!-- V2 Keywords Display Section -->
+            <div id="keywords-display" class="keywords-display" style="display: none;">
+                <h3>🔍 V2 Keywords Searched</h3>
+                <div id="keywords-content" class="keywords-content">
+                    <!-- Keywords will be inserted here -->
+                </div>
+            </div>
+
             <div id="inspiration-response" class="inspiration-response">
                 <!-- Conversational response will be inserted here -->
             </div>
@@ -837,6 +938,7 @@
 
             <div class="button-group">
                 <button type="button" id="back-to-inspiration-btn">New Search</button>
+                <button type="button" id="test-keywords-btn" style="background: #ff6b35;">Test Keywords</button>
                 <button type="button" id="close-inspiration-btn">Close</button>
             </div>
         </div>
@@ -1123,6 +1225,12 @@
             searchInspirationBtn.addEventListener("click", handleSearchInspiration);
             backToInspirationBtn.addEventListener("click", handleBackToInspiration);
             closeInspirationBtn.addEventListener("click", handleClose);
+
+            // Add test keywords button listener
+            const testKeywordsBtn = document.getElementById("test-keywords-btn");
+            if (testKeywordsBtn) {
+                testKeywordsBtn.addEventListener("click", handleTestKeywords);
+            }
 
             // Auto-resize problem statement textarea
             problemStatementTextarea.addEventListener("input", autoResize);
@@ -1748,8 +1856,12 @@
         function showInspirationResults(data) {
             logUI("SHOW_INSPIRATION_RESULTS", {
                 hasResponse: !!data.conversationalResponse,
-                linksCount: data.mobbinLinks?.length || 0
+                linksCount: data.mobbinLinks?.length || 0,
+                hasSearchIntents: !!data.searchIntents
             });
+
+            // Update V2 keywords display
+            updateKeywordsDisplay(data.searchIntents);
 
             // Update conversational response
             const responseDiv = document.getElementById("inspiration-response");
@@ -1773,6 +1885,105 @@
             document.getElementById("inspiration-container").style.display = "none";
             document.getElementById("inspiration-results-container").style.display = "block";
             document.getElementById("status-container").style.display = "none";
+        }
+
+        function updateKeywordsDisplay(searchIntents) {
+            logUI("UPDATE_KEYWORDS_DISPLAY", {
+                hasSearchIntents: !!searchIntents,
+                keywordCount: searchIntents?.keywords?.length || 0
+            });
+
+            const keywordsDisplay = document.getElementById("keywords-display");
+            const keywordsContent = document.getElementById("keywords-content");
+
+            if (!searchIntents || !searchIntents.keywords || searchIntents.keywords.length === 0) {
+                keywordsDisplay.style.display = "none";
+                return;
+            }
+
+            // Show keywords display
+            keywordsDisplay.style.display = "block";
+
+            // Clear previous content
+            keywordsContent.innerHTML = "";
+
+            // Create keywords section
+            const keywordsSection = document.createElement("div");
+            keywordsSection.className = "keywords-section";
+
+            const keywordsSectionTitle = document.createElement("div");
+            keywordsSectionTitle.className = "keywords-section-title";
+            keywordsSectionTitle.textContent = "Keywords";
+            keywordsSection.appendChild(keywordsSectionTitle);
+
+            const keywordsList = document.createElement("div");
+            keywordsList.className = "keywords-list";
+
+            // Add each keyword with confidence score
+            searchIntents.keywords.forEach(keyword => {
+                const keywordTag = document.createElement("div");
+                keywordTag.className = "keyword-tag";
+
+                const keywordText = document.createElement("span");
+                keywordText.textContent = keyword;
+                keywordTag.appendChild(keywordText);
+
+                keywordsList.appendChild(keywordTag);
+            });
+
+            keywordsSection.appendChild(keywordsList);
+            keywordsContent.appendChild(keywordsSection);
+
+            // Add other search intent categories if they exist
+            const categories = [
+                { key: 'patterns', title: 'Patterns' },
+                { key: 'screens', title: 'Screens' },
+                { key: 'comparables', title: 'Comparables' }
+            ];
+
+            categories.forEach(category => {
+                if (searchIntents[category.key] && searchIntents[category.key].length > 0) {
+                    const categorySection = document.createElement("div");
+                    categorySection.className = "keywords-section";
+
+                    const categoryTitle = document.createElement("div");
+                    categoryTitle.className = "keywords-section-title";
+                    categoryTitle.textContent = category.title;
+                    categorySection.appendChild(categoryTitle);
+
+                    const categoryList = document.createElement("div");
+                    categoryList.className = "keywords-list";
+
+                    searchIntents[category.key].forEach(item => {
+                        const itemTag = document.createElement("div");
+                        itemTag.className = "keyword-tag";
+
+                        const itemText = document.createElement("span");
+                        itemText.textContent = item;
+                        itemTag.appendChild(itemText);
+
+                        categoryList.appendChild(itemTag);
+                    });
+
+                    categorySection.appendChild(categoryList);
+                    keywordsContent.appendChild(categorySection);
+                }
+            });
+
+            // Add metadata
+            const totalItems = Object.values(searchIntents).flat().length;
+            const keywordsMeta = document.createElement("div");
+            keywordsMeta.className = "keywords-meta";
+            keywordsMeta.textContent = `V2 Algorithm: ${totalItems} search terms extracted • Using sophisticated prompt engineering with brand intelligence and journey coverage`;
+            keywordsContent.appendChild(keywordsMeta);
+
+            logUI("KEYWORDS_DISPLAY_UPDATED", {
+                totalItems,
+                keywordsCount: searchIntents.keywords?.length || 0,
+                patternsCount: searchIntents.patterns?.length || 0,
+                screensCount: searchIntents.screens?.length || 0,
+                comparablesCount: searchIntents.comparables?.length || 0
+            });
         }
 
         function showInspirationError(message) {

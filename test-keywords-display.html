@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Test Keywords Display</title>
+    <style>
+        /* Copy the keywords display styles from plugin/ui.html */
+        .keywords-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            font-size: 12px;
+        }
+
+        .keywords-display h3 {
+            margin: 0 0 12px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .keywords-content {
+            line-height: 1.5;
+        }
+
+        .keywords-section {
+            margin-bottom: 12px;
+        }
+
+        .keywords-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .keywords-section-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 4px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .keywords-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .keyword-tag {
+            display: inline-flex;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            color: #495057;
+            gap: 4px;
+        }
+
+        .keywords-meta {
+            font-size: 10px;
+            color: #6c757d;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #fff;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #0052a3;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Keywords Display Test</h1>
+
+    <div class="test-section">
+        <h2>Test 1: Mock V2 Keywords Data</h2>
+        <button onclick="testWithMockData()">Test with Mock Data</button>
+        <button onclick="testWithEmptyData()">Test with Empty Data</button>
+        <button onclick="clearDisplay()">Clear Display</button>
+
+        <!-- Keywords Display Section (copied from plugin/ui.html) -->
+        <div id="keywords-display" class="keywords-display" style="display: none;">
+            <h3>🔍 V2 Keywords Searched</h3>
+            <div id="keywords-content" class="keywords-content">
+                <!-- Keywords will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Debug Info</h2>
+        <div id="debug-info"></div>
+    </div>
+
+    <script>
+        // Copy the updateKeywordsDisplay function from plugin/ui.html
+        function updateKeywordsDisplay(searchIntents) {
+            console.log('updateKeywordsDisplay called with:', searchIntents);
+
+            const keywordsDisplay = document.getElementById("keywords-display");
+            const keywordsContent = document.getElementById("keywords-content");
+            const debugInfo = document.getElementById("debug-info");
+
+            debugInfo.innerHTML = `<pre>searchIntents: ${JSON.stringify(searchIntents, null, 2)}</pre>`;
+
+            if (!searchIntents || !searchIntents.keywords || searchIntents.keywords.length === 0) {
+                console.log('No keywords found, hiding display');
+                keywordsDisplay.style.display = "none";
+                return;
+            }
+
+            // Show keywords display
+            keywordsDisplay.style.display = "block";
+
+            // Clear previous content
+            keywordsContent.innerHTML = "";
+
+            // Create keywords section
+            const keywordsSection = document.createElement("div");
+            keywordsSection.className = "keywords-section";
+
+            const keywordsSectionTitle = document.createElement("div");
+            keywordsSectionTitle.className = "keywords-section-title";
+            keywordsSectionTitle.textContent = "Keywords";
+            keywordsSection.appendChild(keywordsSectionTitle);
+
+            const keywordsList = document.createElement("div");
+            keywordsList.className = "keywords-list";
+
+            // Add each keyword
+            searchIntents.keywords.forEach(keyword => {
+                const keywordTag = document.createElement("div");
+                keywordTag.className = "keyword-tag";
+
+                const keywordText = document.createElement("span");
+                keywordText.textContent = keyword;
+                keywordTag.appendChild(keywordText);
+
+                keywordsList.appendChild(keywordTag);
+            });
+
+            keywordsSection.appendChild(keywordsList);
+            keywordsContent.appendChild(keywordsSection);
+
+            // Add other search intent categories if they exist
+            const categories = [
+                { key: 'patterns', title: 'Patterns' },
+                { key: 'screens', title: 'Screens' },
+                { key: 'comparables', title: 'Comparables' }
+            ];
+
+            categories.forEach(category => {
+                if (searchIntents[category.key] && searchIntents[category.key].length > 0) {
+                    const categorySection = document.createElement("div");
+                    categorySection.className = "keywords-section";
+
+                    const categoryTitle = document.createElement("div");
+                    categoryTitle.className = "keywords-section-title";
+                    categoryTitle.textContent = category.title;
+                    categorySection.appendChild(categoryTitle);
+
+                    const categoryList = document.createElement("div");
+                    categoryList.className = "keywords-list";
+
+                    searchIntents[category.key].forEach(item => {
+                        const itemTag = document.createElement("div");
+                        itemTag.className = "keyword-tag";
+
+                        const itemText = document.createElement("span");
+                        itemText.textContent = item;
+                        itemTag.appendChild(itemText);
+
+                        categoryList.appendChild(itemTag);
+                    });
+
+                    categorySection.appendChild(categoryList);
+                    keywordsContent.appendChild(categorySection);
+                }
+            });
+
+            // Add metadata
+            const totalItems = Object.values(searchIntents).flat().length;
+            const keywordsMeta = document.createElement("div");
+            keywordsMeta.className = "keywords-meta";
+            keywordsMeta.textContent = `V2 Algorithm: ${totalItems} search terms extracted • Using sophisticated prompt engineering with brand intelligence and journey coverage`;
+            keywordsContent.appendChild(keywordsMeta);
+
+            console.log('Keywords display updated successfully');
+        }
+
+        // Test functions
+        function testWithMockData() {
+            const mockSearchIntents = {
+                keywords: ["visa offers", "card rewards", "middle east", "partner vendors"],
+                patterns: ["offer redemption", "card benefits", "loyalty program"],
+                screens: ["offers list", "redemption flow", "partner directory"],
+                comparables: ["Emirates NBD", "ADCB", "Mashreq Bank"]
+            };
+
+            console.log('Testing with mock data:', mockSearchIntents);
+            updateKeywordsDisplay(mockSearchIntents);
+        }
+
+        function testWithEmptyData() {
+            const emptySearchIntents = {
+                keywords: [],
+                patterns: [],
+                screens: [],
+                comparables: []
+            };
+
+            console.log('Testing with empty data:', emptySearchIntents);
+            updateKeywordsDisplay(emptySearchIntents);
+        }
+
+        function clearDisplay() {
+            console.log('Clearing display');
+            updateKeywordsDisplay(null);
+        }
+
+        // Auto-test on load
+        window.onload = function () {
+            console.log('Page loaded, running initial test');
+            testWithMockData();
+        };
+    </script>
+</body>
+
+</html>
